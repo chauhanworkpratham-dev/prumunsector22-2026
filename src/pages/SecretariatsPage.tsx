@@ -7,14 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useActiveEdition } from "@/hooks/useActiveEdition";
 import { PageBackdrop } from "@/hooks/usePageBackground";
-import { 
-  Users, Mail, Phone, MessageSquare, CheckCircle, 
-  ChevronRight, CalendarDays, MapPin, Sparkles, Orbit, Network 
-} from "lucide-react";
+import { Users, Mail, Phone, MessageSquare, CheckCircle2, ChevronRight, LayoutGrid, List, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import crest from "@/assets/prumun-crest.png";
 
-type SecMember = {
+type Member = {
   id: string;
   name: string;
   role: "secretariat" | "staff";
@@ -22,430 +19,272 @@ type SecMember = {
   phone: string;
   email: string;
   photo: string;
-  rank: number;
 };
 
-const DEFAULT_MEMBERS: SecMember[] = [
-  {
-    id: "sec-1",
-    name: "Aarav Sharma",
-    role: "secretariat",
-    position: "Secretary General",
-    phone: "+91 98765 43210",
-    email: "secgen@prumun.org",
-    photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Aarav",
-    rank: 1
-  },
-  {
-    id: "sec-2",
-    name: "Diya Kaplan",
-    role: "secretariat",
-    position: "Director General",
-    phone: "+91 98765 43211",
-    email: "directorgent@prumun.org",
-    photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Diya",
-    rank: 2
-  },
-  {
-    id: "staff-1",
-    name: "Rohan Verma",
-    role: "staff",
-    position: "Chief of Staff",
-    phone: "+91 98765 43212",
-    email: "rohan@prumun.org",
-    photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Rohan",
-    rank: 3
-  }
+const DEFAULTS: Member[] = [
+  { id: "s1", role: "secretariat", name: "Aarav Sharma",   position: "Secretary General",    phone: "+91 98765 43210", email: "secgen@prumun.org",   photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Aarav"  },
+  { id: "s2", role: "secretariat", name: "Diya Kapoor",    position: "Director General",      phone: "+91 98765 43211", email: "dg@prumun.org",        photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Diya"   },
+  { id: "s3", role: "secretariat", name: "Rohan Mehra",    position: "Deputy Secretary",      phone: "+91 98765 43213", email: "dep@prumun.org",       photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Rohan"  },
+  { id: "f1", role: "staff",       name: "Priya Nair",     position: "Chief of Staff",        phone: "+91 98765 43214", email: "cos@prumun.org",       photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Priya"  },
+  { id: "f2", role: "staff",       name: "Karan Bhatia",   position: "Head of Logistics",     phone: "+91 98765 43215", email: "logistics@prumun.org", photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Karan"  },
+  { id: "f3", role: "staff",       name: "Ananya Gupta",   position: "Head of Publications",  phone: "+91 98765 43216", email: "pub@prumun.org",       photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Ananya" },
 ];
+
+type Phase = 1 | 2 | 3;
 
 export const SecretariatsPage = ({ type }: { type: "secretariat" | "staff" }) => {
   const { edition } = useActiveEdition();
-  const [members, setMembers] = useState<SecMember[]>([]);
-  const [displayLayout, setDisplayLayout] = useState<"circular" | "tree">("circular");
+  const [members, setMembers] = useState<Member[]>([]);
+  const [layout,  setLayout]  = useState<"grid" | "list">("grid");
 
-  // Messaging Modal Stepper
-  const [targetMember, setTargetMember] = useState<SecMember | null>(null);
-  const [msgPhase, setMsgPhase] = useState<1 | 2 | 3>(1);
-  const [delegateInfo, setDelegateInfo] = useState({
-    name: "",
-    school: "",
-    grade: "",
-    role: "Delegate",
-    contact: ""
-  });
-  const [messageForm, setMessageForm] = useState({
-    recipientId: "",
-    title: "",
-    body: ""
-  });
+  const [target,   setTarget]   = useState<Member | null>(null);
+  const [phase,    setPhase]    = useState<Phase>(1);
+  const [sending,  setSending]  = useState(false);
+  const [delegateInfo, setDInfo] = useState({ name: "", school: "", grade: "", role: "Delegate", contact: "" });
+  const [msgForm, setMsgForm]   = useState({ recipientId: "", title: "", body: "" });
 
   useEffect(() => {
     const stored = localStorage.getItem("mun_secretariats_list");
-    if (stored) {
-      setMembers(JSON.parse(stored));
-    } else {
-      setMembers(DEFAULT_MEMBERS);
-      localStorage.setItem("mun_secretariats_list", JSON.stringify(DEFAULT_MEMBERS));
-    }
+    setMembers(stored ? JSON.parse(stored) : DEFAULTS);
   }, []);
 
-  // Filter and sort members
-  const filtered = members
-    .filter(m => m.role === type)
-    .sort((a, b) => a.rank - b.rank);
+  const filtered = members.filter(m => m.role === type);
 
-  const openMessageModal = (m: SecMember) => {
-    setTargetMember(m);
-    setMessageForm({
-      recipientId: m.id,
-      title: "",
-      body: ""
-    });
-    setMsgPhase(1);
+  const openModal = (m: Member) => {
+    setTarget(m);
+    setMsgForm({ recipientId: m.id, title: "", body: "" });
+    setDInfo({ name: "", school: "", grade: "", role: "Delegate", contact: "" });
+    setPhase(1);
   };
 
-  const handleSendMessage = () => {
-    if (!messageForm.title || !messageForm.body) {
-      return;
-    }
-    
-    // Save to local storage inbox
+  const sendMessage = async () => {
+    setSending(true);
+    await new Promise(r => setTimeout(r, 600)); // simulate network
     const stored = localStorage.getItem("mun_secretariat_messages");
     const msgs = stored ? JSON.parse(stored) : [];
-    
-    const newMsg = {
+    localStorage.setItem("mun_secretariat_messages", JSON.stringify([...msgs, {
       id: `msg-${Date.now()}`,
-      secretariatId: messageForm.recipientId,
-      delegateName: delegateInfo.name,
-      delegateSchool: delegateInfo.school,
-      delegateClass: delegateInfo.grade,
-      delegateRole: delegateInfo.role,
-      delegateContact: delegateInfo.contact,
-      title: messageForm.title,
-      message: messageForm.body,
-      timestamp: new Date().toISOString()
-    };
-    
-    localStorage.setItem("mun_secretariat_messages", JSON.stringify([...msgs, newMsg]));
-    setMsgPhase(3);
+      secretariatId: msgForm.recipientId,
+      ...delegateInfo,
+      title: msgForm.title,
+      message: msgForm.body,
+      timestamp: new Date().toISOString(),
+    }]));
+    setSending(false);
+    setPhase(3);
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div className="min-h-screen bg-background mesh-bg">
       <Navbar />
       <PageBackdrop pageKey="venue" />
 
-      {/* Cinematic Header */}
-      <section className="pt-36 pb-12 container text-center relative z-10">
-        <div className="max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 glass rounded-full px-5 py-2 mb-2 animate-fade-in">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-xs font-semibold tracking-[0.2em] text-primary-deep uppercase">
-              Meet Our Leaders
-            </span>
-          </div>
-          <h1 className="font-display text-5xl md:text-6xl font-bold gradient-text-deep leading-none">
-            {type === "secretariat" ? "The Secretariat Board" : "The Officers & Staff"}
-          </h1>
-          <p className="text-muted-foreground text-base max-w-xl mx-auto">
-            Diplomats coordinating the conference behind the scenes. Personally message any team member using the interactive channels below.
-          </p>
+      {/* ── Header ── */}
+      <section className="pt-36 pb-10 container text-center">
+        <p className="section-label">{type === "secretariat" ? "Leadership Board" : "Officers & Staff"}</p>
+        <h1 className="font-display text-5xl md:text-6xl font-bold gradient-text-deep mb-4 leading-tight">
+          {type === "secretariat" ? "The Secretariat" : "Our Staff"}
+        </h1>
+        <p className="text-muted-foreground text-sm max-w-xl mx-auto mb-8">
+          Meet the team coordinating {edition?.name ?? "the conference"} behind the scenes.
+          Reach out directly through the message channel below.
+        </p>
 
-          {/* Layout switches */}
-          <div className="flex justify-center gap-2 pt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDisplayLayout("circular")}
-              className={cn("rounded-xl font-semibold", displayLayout === "circular" && "bg-primary/10 text-primary border-primary/20")}
-            >
-              <Orbit className="w-4 h-4 mr-1.5" /> Circular Board
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDisplayLayout("tree")}
-              className={cn("rounded-xl font-semibold", displayLayout === "tree" && "bg-primary/10 text-primary border-primary/20")}
-            >
-              <Network className="w-4 h-4 mr-1.5" /> Organizational Tree
-            </Button>
-          </div>
+        {/* Layout toggle — glass tab bar */}
+        <div className="inline-flex tab-bar">
+          <button className="tab-item" aria-selected={layout === "grid"} onClick={() => setLayout("grid")}>
+            <LayoutGrid className="w-3.5 h-3.5 inline mr-1.5" />Grid
+          </button>
+          <button className="tab-item" aria-selected={layout === "list"} onClick={() => setLayout("list")}>
+            <List className="w-3.5 h-3.5 inline mr-1.5" />List
+          </button>
         </div>
       </section>
 
-      {/* Main interactive layouts container */}
-      <section className="container pb-24 relative z-10">
+      {/* ── Members ── */}
+      <section className="container pb-24">
         {filtered.length === 0 ? (
-          <div className="glass rounded-3xl p-12 text-center text-muted-foreground">
-            No profiles listed yet. Profiles will appear once added in the Secretariat console.
+          <div className="glass rounded-2xl p-16 text-center text-muted-foreground text-sm">
+            Profiles will appear once added in the Secretariat console.
           </div>
-        ) : displayLayout === "circular" ? (
-          /* ================= Orbit Boardroom Layout ================= */
-          <div className="relative min-h-[500px] flex items-center justify-center py-12">
-            {/* Center Core */}
-            <div className="w-32 h-32 rounded-full glass border border-primary/20 flex flex-col items-center justify-center shadow-elegant z-20 animate-glow-pulse relative">
-              <img src={edition?.logo_url || crest} alt="" className="w-20 h-20 object-contain drop-shadow-md" />
-              <span className="text-[8px] font-bold tracking-[0.2em] text-primary mt-1">PRUMUN</span>
-            </div>
-
-            {/* Orbit rings */}
-            <div className="absolute w-[360px] h-[360px] sm:w-[480px] sm:h-[480px] rounded-full border border-dashed border-primary/20 animate-spin -z-10 pointer-events-none" style={{ animationDuration: "120s" }} />
-            <div className="absolute w-[500px] h-[500px] sm:w-[680px] sm:h-[680px] rounded-full border border-dashed border-primary/10 animate-spin -z-10 pointer-events-none" style={{ animationDuration: "180s", animationDirection: "reverse" }} />
-
-            {/* Orbiting Profile Cards */}
-            <div className="w-full max-w-5xl grid sm:grid-cols-2 md:grid-cols-3 gap-6 pt-12">
-              {filtered.map((m, i) => (
-                <div 
-                  key={m.id}
-                  className="glass hover-lift rounded-3xl p-5 border border-border/50 shadow-glass flex flex-col justify-between items-center text-center animate-fade-in relative overflow-hidden"
-                  style={{ animationDelay: `${i * 100}ms` }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
-                  
-                  <div className="w-20 h-20 rounded-full border-2 border-primary/40 overflow-hidden bg-secondary relative z-10 shrink-0 mb-4 shadow-soft">
-                    <img src={m.photo} alt={m.name} className="w-full h-full object-cover" />
-                  </div>
-
-                  <div className="space-y-1 relative z-10 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="font-display text-lg font-bold tracking-tight text-foreground">{m.name}</h3>
-                      <p className="text-xs text-primary font-bold tracking-wider">{m.position}</p>
-                    </div>
-
-                    <div className="flex justify-center gap-4 text-muted-foreground text-[11px] pt-3">
-                      {m.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3 text-primary/75" /> {m.phone}</span>}
-                    </div>
-
-                    <Button 
-                      onClick={() => openMessageModal(m)} 
-                      variant="hero" 
-                      size="sm" 
-                      className="w-full mt-4 text-xs font-bold rounded-xl"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5 mr-1.5" /> Message Us
-                    </Button>
-                  </div>
+        ) : layout === "grid" ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filtered.map((m, i) => (
+              <div key={m.id} className="glass rounded-2xl p-6 hover-lift flex flex-col items-center text-center gap-4 animate-fade-in"
+                style={{ animationDelay: `${i * 60}ms` }}>
+                {/* Avatar */}
+                <div className="w-20 h-20 rounded-2xl overflow-hidden ring-2 ring-primary/20 shadow-card bg-secondary shrink-0">
+                  <img src={m.photo} alt={m.name} className="w-full h-full object-cover" />
                 </div>
-              ))}
-            </div>
+                <div className="flex-1">
+                  <h3 className="font-display font-bold text-lg leading-tight">{m.name}</h3>
+                  <p className="text-xs font-semibold text-primary mt-0.5 tracking-wide">{m.position}</p>
+                  {m.phone && (
+                    <p className="text-[11px] text-muted-foreground mt-2 flex items-center justify-center gap-1">
+                      <Phone className="w-3 h-3" /> {m.phone}
+                    </p>
+                  )}
+                </div>
+                <Button onClick={() => openModal(m)} size="sm"
+                  className="w-full bg-gradient-primary text-white border-0 font-semibold hover:opacity-90 transition-opacity">
+                  <MessageSquare className="w-3.5 h-3.5" /> Message
+                </Button>
+              </div>
+            ))}
           </div>
         ) : (
-          /* ================= Organizational Tree Layout ================= */
-          <div className="max-w-4xl mx-auto space-y-12 py-12 relative">
-            {filtered.map((m, i) => {
-              const isEven = i % 2 === 0;
-              return (
-                <div 
-                  key={m.id}
-                  className={cn(
-                    "flex flex-col md:flex-row items-center gap-6 md:gap-12 relative animate-fade-in",
-                    !isEven && "md:flex-row-reverse"
-                  )}
-                  style={{ animationDelay: `${i * 100}ms` }}
-                >
-                  {/* Vertical connector line */}
-                  {i < filtered.length - 1 && (
-                    <div className="hidden md:block absolute left-1/2 -bottom-16 w-0.5 h-16 bg-gradient-to-b from-primary/20 to-primary/40" />
-                  )}
-
-                  {/* Profile Card */}
-                  <div className="w-full md:w-[60%] glass rounded-3xl p-6 border border-border/50 shadow-glass flex flex-col sm:flex-row items-center gap-5 hover-lift relative overflow-hidden">
-                    <div className="w-20 h-20 rounded-full border-2 border-primary/40 overflow-hidden bg-secondary shadow-soft shrink-0">
-                      <img src={m.photo} alt={m.name} className="w-full h-full object-cover" />
-                    </div>
-
-                    <div className="flex-1 min-w-0 text-center sm:text-left space-y-1.5">
-                      <div>
-                        <span className="text-[9px] font-bold bg-primary/10 text-primary px-2.5 py-0.5 rounded-full uppercase tracking-wider">RANK {m.rank}</span>
-                        <h3 className="font-display text-xl font-bold tracking-tight mt-1">{m.name}</h3>
-                        <p className="text-xs text-primary font-bold">{m.position}</p>
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-[10px] text-muted-foreground pt-1 justify-center sm:justify-start">
-                        {m.phone && <span className="flex items-center gap-1 justify-center"><Phone className="w-3 h-3 text-primary/75" /> {m.phone}</span>}
-                        {m.email && <span className="flex items-center gap-1 justify-center"><Mail className="w-3 h-3 text-primary/75" /> {m.email}</span>}
-                      </div>
-                    </div>
-
-                    <div className="shrink-0 w-full sm:w-auto pt-3 sm:pt-0">
-                      <Button 
-                        onClick={() => openMessageModal(m)} 
-                        variant="hero" 
-                        size="sm"
-                        className="w-full sm:w-auto rounded-xl text-xs font-bold"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5 mr-1" /> Message
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Visual spacer on side */}
-                  <div className="hidden md:block w-[40%] text-center text-muted-foreground italic text-xs">
-                    Representing the leadership core of PRUMUN conference at position {m.rank}.
+          <div className="space-y-3 max-w-3xl mx-auto">
+            {filtered.map((m, i) => (
+              <div key={m.id} className="glass rounded-2xl p-4 hover-lift flex items-center gap-4 animate-slide-in"
+                style={{ animationDelay: `${i * 50}ms` }}>
+                <div className="w-14 h-14 rounded-xl overflow-hidden ring-1 ring-primary/20 bg-secondary shrink-0">
+                  <img src={m.photo} alt={m.name} className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-display font-bold truncate">{m.name}</h3>
+                  <p className="text-xs text-primary font-semibold">{m.position}</p>
+                  <div className="flex flex-wrap gap-3 mt-1">
+                    {m.phone && <span className="text-[11px] text-muted-foreground flex items-center gap-1"><Phone className="w-3 h-3" /> {m.phone}</span>}
+                    {m.email && <span className="text-[11px] text-muted-foreground flex items-center gap-1"><Mail className="w-3 h-3" /> {m.email}</span>}
                   </div>
                 </div>
-              );
-            })}
+                <Button onClick={() => openModal(m)} size="sm" variant="outline"
+                  className="shrink-0 font-semibold border-primary/30 text-primary hover:bg-primary hover:text-white transition-all">
+                  <MessageSquare className="w-3.5 h-3.5" /> Message
+                </Button>
+              </div>
+            ))}
           </div>
         )}
       </section>
 
-      {/* Stepper Message Us Modal Popup */}
-      {targetMember && (
-        <div className="fixed inset-0 z-50 bg-foreground/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setTargetMember(null)}>
-          <div className="glass-strong rounded-3xl p-6 md:p-8 max-w-lg w-full animate-fade-in relative" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-start gap-4 border-b border-border/40 pb-4 mb-4">
+      {/* ── Message Modal ── */}
+      {target && (
+        <div className="fixed inset-0 z-50 bg-foreground/40 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => { if (phase !== 3) setTarget(null); }}>
+          <div className="glass-strong rounded-3xl p-6 md:p-8 max-w-lg w-full animate-slide-up"
+            onClick={e => e.stopPropagation()}>
+
+            {/* Modal header */}
+            <div className="flex items-center justify-between gap-4 mb-5 pb-4 border-b border-border/50">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-secondary">
-                  <img src={targetMember.photo} alt={targetMember.name} />
+                <div className="w-10 h-10 rounded-xl overflow-hidden ring-1 ring-primary/20 bg-secondary">
+                  <img src={target.photo} alt={target.name} className="w-full h-full object-cover" />
                 </div>
                 <div>
-                  <h3 className="font-display font-bold">Contact {targetMember.name}</h3>
-                  <p className="text-xs text-primary font-semibold">{targetMember.position}</p>
+                  <p className="font-display font-bold text-sm">{target.name}</p>
+                  <p className="text-xs text-primary font-semibold">{target.position}</p>
                 </div>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setTargetMember(null)}>Close</Button>
+              {phase !== 3 && (
+                <button onClick={() => setTarget(null)} aria-label="Close"
+                  className="w-8 h-8 rounded-xl glass flex items-center justify-center hover:bg-destructive/10 transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
-            {/* Steps Stepper Indicator */}
-            <div className="flex justify-center gap-8 mb-6 text-[10px] font-bold text-muted-foreground">
-              <span className={cn(msgPhase === 1 ? "text-primary" : "text-muted-foreground")}>1. PORTFOLIO DETAILS</span>
-              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40" />
-              <span className={cn(msgPhase === 2 ? "text-primary" : "text-muted-foreground")}>2. ENTER MESSAGE</span>
-              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40" />
-              <span className={cn(msgPhase === 3 ? "text-primary" : "text-muted-foreground")}>3. COMPLETE</span>
-            </div>
+            {/* Step indicator */}
+            {phase !== 3 && (
+              <div className="flex items-center gap-1 mb-6 text-[10px] font-bold tracking-widest text-muted-foreground">
+                {(["YOUR DETAILS", "MESSAGE"] as const).map((label, idx) => (
+                  <div key={label} className="flex items-center gap-1">
+                    <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold",
+                      phase === idx + 1 ? "bg-primary text-white" : phase > idx + 1 ? "bg-success/20 text-success" : "bg-secondary text-muted-foreground"
+                    )}>{idx + 1}</span>
+                    <span className={phase === idx + 1 ? "text-primary" : ""}>{label}</span>
+                    {idx === 0 && <ChevronRight className="w-3 h-3 text-border" />}
+                  </div>
+                ))}
+              </div>
+            )}
 
-            {/* Step 1: Delegate Portfolio Info */}
-            {msgPhase === 1 && (
-              <div className="space-y-4 animate-fade-in">
+            {/* Phase 1 */}
+            {phase === 1 && (
+              <div className="space-y-3 animate-fade-in">
                 <div className="space-y-1.5">
-                  <Label>Delegate Full Name</Label>
-                  <Input 
-                    value={delegateInfo.name} 
-                    onChange={e => setDelegateInfo({ ...delegateInfo, name: e.target.value })}
-                    placeholder="e.g. Aarav Gupta" 
-                  />
+                  <Label htmlFor="d-name">Full Name</Label>
+                  <Input id="d-name" value={delegateInfo.name} onChange={e => setDInfo(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Aarav Gupta" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label>School / Institution</Label>
-                    <Input 
-                      value={delegateInfo.school} 
-                      onChange={e => setDelegateInfo({ ...delegateInfo, school: e.target.value })}
-                      placeholder="e.g. Prudence School" 
-                    />
+                    <Label htmlFor="d-school">School</Label>
+                    <Input id="d-school" value={delegateInfo.school} onChange={e => setDInfo(p => ({ ...p, school: e.target.value }))} placeholder="Prudence School" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Class / Grade</Label>
-                    <Input 
-                      value={delegateInfo.grade} 
-                      onChange={e => setDelegateInfo({ ...delegateInfo, grade: e.target.value })}
-                      placeholder="e.g. Class 11-A" 
-                    />
+                    <Label htmlFor="d-grade">Class</Label>
+                    <Input id="d-grade" value={delegateInfo.grade} onChange={e => setDInfo(p => ({ ...p, grade: e.target.value }))} placeholder="e.g. 11-A" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label>Role in Matrix</Label>
-                    <select 
-                      value={delegateInfo.role}
-                      onChange={e => setDelegateInfo({ ...delegateInfo, role: e.target.value })}
-                      className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                    >
-                      <option value="Delegate">Delegate</option>
-                      <option value="Executive Board">Executive Board (EB)</option>
-                      <option value="Organising Committee">Organising Committee (OC)</option>
+                    <Label htmlFor="d-role">Role</Label>
+                    <select id="d-role" value={delegateInfo.role} onChange={e => setDInfo(p => ({ ...p, role: e.target.value }))}
+                      className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                      <option>Delegate</option>
+                      <option>Executive Board</option>
+                      <option>Organising Committee</option>
                     </select>
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Contact Phone/Email</Label>
-                    <Input 
-                      value={delegateInfo.contact} 
-                      onChange={e => setDelegateInfo({ ...delegateInfo, contact: e.target.value })}
-                      placeholder="Phone or Email" 
-                    />
+                    <Label htmlFor="d-contact">Contact</Label>
+                    <Input id="d-contact" value={delegateInfo.contact} onChange={e => setDInfo(p => ({ ...p, contact: e.target.value }))} placeholder="Phone or email" />
                   </div>
                 </div>
-
-                <div className="flex justify-end pt-4 border-t border-border/40 mt-6">
-                  <Button 
-                    variant="hero"
-                    onClick={() => setMsgPhase(2)}
+                <div className="flex justify-end pt-2">
+                  <Button onClick={() => setPhase(2)}
                     disabled={!delegateInfo.name || !delegateInfo.school || !delegateInfo.contact}
-                  >
-                    Next Step <ChevronRight className="w-4 h-4 ml-1" />
+                    className="bg-gradient-primary text-white border-0 font-semibold">
+                    Next <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
             )}
 
-            {/* Step 2: Message inputs */}
-            {msgPhase === 2 && (
-              <div className="space-y-4 animate-fade-in">
+            {/* Phase 2 */}
+            {phase === 2 && (
+              <div className="space-y-3 animate-fade-in">
                 <div className="space-y-1.5">
-                  <Label>Recipient Profile</Label>
-                  <select 
-                    value={messageForm.recipientId}
-                    onChange={e => setMessageForm({ ...messageForm, recipientId: e.target.value })}
-                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    {members.map(m => (
-                      <option key={m.id} value={m.id}>{m.name} ({m.position})</option>
-                    ))}
+                  <Label htmlFor="msg-to">Send to</Label>
+                  <select id="msg-to" value={msgForm.recipientId} onChange={e => setMsgForm(p => ({ ...p, recipientId: e.target.value }))}
+                    className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                    {members.map(m => <option key={m.id} value={m.id}>{m.name} — {m.position}</option>)}
                   </select>
                 </div>
-
                 <div className="space-y-1.5">
-                  <Label>Message Title / Topic</Label>
-                  <Input 
-                    value={messageForm.title} 
-                    onChange={e => setMessageForm({ ...messageForm, title: e.target.value })}
-                    placeholder="e.g. Clarification regarding Background Guides" 
-                  />
+                  <Label htmlFor="msg-title">Subject</Label>
+                  <Input id="msg-title" value={msgForm.title} onChange={e => setMsgForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Background Guide clarification" />
                 </div>
-
                 <div className="space-y-1.5">
-                  <Label>Message Content</Label>
-                  <Textarea 
-                    rows={4} 
-                    value={messageForm.body} 
-                    onChange={e => setMessageForm({ ...messageForm, body: e.target.value })}
-                    placeholder="Write your message details here..." 
-                  />
+                  <Label htmlFor="msg-body">Message</Label>
+                  <Textarea id="msg-body" rows={4} value={msgForm.body} onChange={e => setMsgForm(p => ({ ...p, body: e.target.value }))} placeholder="Write your message here…" />
                 </div>
-
-                <div className="flex justify-between pt-4 border-t border-border/40 mt-6">
-                  <Button variant="ghost" onClick={() => setMsgPhase(1)}>Back</Button>
-                  <Button 
-                    variant="hero"
-                    onClick={handleSendMessage}
-                    disabled={!messageForm.title || !messageForm.body}
-                  >
-                    Send Message
+                <div className="flex justify-between pt-2">
+                  <Button variant="ghost" size="sm" onClick={() => setPhase(1)}>Back</Button>
+                  <Button onClick={sendMessage} disabled={!msgForm.title || !msgForm.body || sending}
+                    className="bg-gradient-primary text-white border-0 font-semibold">
+                    {sending ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</> : "Send Message"}
                   </Button>
                 </div>
               </div>
             )}
 
-            {/* Step 3: Success message */}
-            {msgPhase === 3 && (
-              <div className="text-center py-8 space-y-4 animate-fade-in">
-                <div className="w-16 h-16 mx-auto rounded-full bg-success/15 text-success flex items-center justify-center">
-                  <CheckCircle className="w-10 h-10" />
+            {/* Phase 3 — Success */}
+            {phase === 3 && (
+              <div className="text-center py-6 space-y-4 animate-fade-in">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-success/10 text-success flex items-center justify-center">
+                  <CheckCircle2 className="w-8 h-8" />
                 </div>
-                <div className="space-y-1">
-                  <h4 className="font-display text-xl font-bold">Message Transmitted!</h4>
-                  <p className="text-xs text-muted-foreground">Address: {targetMember.name}</p>
+                <div>
+                  <h4 className="font-display text-xl font-bold mb-1">Message Sent!</h4>
+                  <p className="text-xs text-muted-foreground">To: {target.name} · {target.position}</p>
                 </div>
-                <p className="text-sm text-foreground/80 max-w-sm mx-auto">
-                  Thank you for reaching out. You will be contacted shortly by the staff/secretariat itself regarding your inquiry.
+                <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                  The team will get back to you via the contact you provided. Thank you!
                 </p>
-                <div className="pt-4">
-                  <Button variant="outline" className="rounded-xl px-8" onClick={() => setTargetMember(null)}>
-                    Dismiss
-                  </Button>
-                </div>
+                <Button variant="outline" className="rounded-xl px-8 font-semibold" onClick={() => setTarget(null)}>
+                  Done
+                </Button>
               </div>
             )}
           </div>

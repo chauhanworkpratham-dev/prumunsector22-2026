@@ -7,13 +7,16 @@ export const ThemeToggle = ({ className }: { className?: string }) => {
   return (
     <button
       onClick={toggle}
-      aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+      aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
       className={cn(
-        "w-9 h-9 rounded-full glass flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all",
-        className
+        "w-9 h-9 rounded-xl glass flex items-center justify-center",
+        "text-muted-foreground hover:text-primary hover:border-primary/30 transition-all",
+        className,
       )}
     >
-      {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+      {theme === "dark"
+        ? <Sun  className="w-4 h-4" />
+        : <Moon className="w-4 h-4" />}
     </button>
   );
 };

@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useActiveEdition } from "@/hooks/useActiveEdition";
 import { getCommittees, type Committee } from "@/lib/munApi";
-import { Link } from "react-router-dom";
 import { ArrowRight, Users } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const DIFF_STYLE = {
+  Beginner:     "bg-success/10 text-success",
+  Intermediate: "bg-warning/10 text-warning",
+  Advanced:     "bg-destructive/10 text-destructive",
+} as const;
 
 const Committees = () => {
   const { edition } = useActiveEdition();
@@ -15,44 +22,47 @@ const Committees = () => {
   }, [edition]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background mesh-bg">
       <Navbar />
       <section className="pt-36 pb-12 container">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <p className="text-xs tracking-[0.3em] text-primary font-bold mb-3">THE COUNCILS · {edition?.name ?? ""}</p>
+        <div className="text-center max-w-2xl mx-auto mb-12">
+          <p className="section-label">The Councils · {edition?.name ?? ""}</p>
           <h1 className="font-display text-5xl md:text-6xl font-bold gradient-text-deep mb-4">Committees</h1>
-          <p className="text-muted-foreground text-lg">
-            Each arena of debate has its own agenda and portfolios. Read carefully, then claim your seat in the live matrix.
+          <p className="text-muted-foreground text-sm">
+            Each arena has its own agenda and portfolios. Study carefully, then claim your seat in the live matrix.
           </p>
         </div>
       </section>
 
       <section className="container pb-24">
-        <div className="grid lg:grid-cols-2 gap-6">
+        <div className="grid lg:grid-cols-2 gap-5">
           {committees.map((c, i) => (
-            <div key={c.id} className="glass-strong rounded-3xl p-8 hover-lift animate-fade-in" style={{ animationDelay: `${i * 80}ms` }}>
+            <div key={c.id} className="glass rounded-2xl p-7 hover-lift animate-fade-in" style={{ animationDelay: `${i * 70}ms` }}>
               <div className="flex items-start justify-between mb-4 gap-4">
                 <div>
-                  <div className="text-xs tracking-widest text-primary font-bold mb-1">{c.short_name}</div>
-                  <h2 className="font-display text-2xl md:text-3xl font-bold leading-tight">{c.name}</h2>
+                  <div className="pill bg-primary/8 text-primary text-[10px] mb-2">{c.short_name}</div>
+                  <h2 className="font-display text-xl md:text-2xl font-bold leading-tight">{c.name}</h2>
                 </div>
-                <span className={`shrink-0 text-[10px] font-bold tracking-widest px-3 py-1.5 rounded-full ${
-                  c.difficulty === "Beginner" ? "bg-success/15 text-success" :
-                  c.difficulty === "Intermediate" ? "bg-warning/15 text-warning" :
-                  "bg-destructive/15 text-destructive"
-                }`}>{c.difficulty.toUpperCase()}</span>
-              </div>
-              <div className="bg-primary/5 border-l-4 border-primary rounded-r-xl p-4 my-5">
-                <p className="text-xs uppercase tracking-widest text-primary font-bold mb-1">Agenda</p>
-                <p className="text-foreground/85 italic">"{c.agenda}"</p>
-              </div>
-              {c.description && <p className="text-sm text-muted-foreground mb-6">{c.description}</p>}
-              <div className="flex items-center justify-between pt-4 border-t border-border">
-                <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Users className="w-4 h-4" /> {c.portfolios.length} portfolios available
+                <span className={cn("pill text-[9px] shrink-0", DIFF_STYLE[c.difficulty as keyof typeof DIFF_STYLE])}>
+                  {c.difficulty}
                 </span>
-                <Link to={`/matrix?c=${c.id}`} className="text-primary font-semibold text-sm flex items-center gap-1 hover:gap-2 transition-all">
-                  View matrix <ArrowRight className="w-4 h-4" />
+              </div>
+
+              {/* Agenda */}
+              <div className="rounded-xl bg-primary/5 border-l-2 border-primary px-4 py-3 my-4">
+                <p className="text-[10px] uppercase tracking-widest text-primary font-bold mb-1">Agenda</p>
+                <p className="text-sm text-foreground/80 italic">"{c.agenda}"</p>
+              </div>
+
+              {c.description && <p className="text-xs text-muted-foreground mb-5 leading-relaxed">{c.description}</p>}
+
+              <div className="divider pt-4 flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Users className="w-3.5 h-3.5" /> {c.portfolios.length} portfolios
+                </span>
+                <Link to={`/matrix?c=${c.id}`}
+                  className="text-primary font-semibold text-xs flex items-center gap-1 hover:gap-1.5 transition-all group">
+                  View Matrix <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </div>
             </div>

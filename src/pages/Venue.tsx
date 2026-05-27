@@ -1,57 +1,71 @@
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { Button } from "@/components/ui/button";
 import { VENUE } from "@/lib/munData";
 import { MapPin, Navigation, Train, Car } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const Venue = () => (
-  <div className="min-h-screen bg-background">
+  <div className="min-h-screen bg-background mesh-bg">
     <Navbar />
     <section className="pt-36 pb-12 container max-w-5xl">
       <div className="text-center mb-10">
-        <p className="text-xs tracking-[0.3em] text-primary font-bold mb-3">THE STAGE</p>
-        <h1 className="font-display text-5xl md:text-6xl font-bold gradient-text-deep mb-4">Venue</h1>
-        <p className="text-muted-foreground text-lg">Where diplomacy meets debate.</p>
+        <p className="section-label">The Stage</p>
+        <h1 className="font-display text-5xl md:text-6xl font-bold gradient-text-deep mb-3">Venue</h1>
+        <p className="text-muted-foreground text-sm">Where diplomacy meets debate.</p>
       </div>
 
-      <div className="glass-strong rounded-3xl overflow-hidden mb-8">
+      {/* Map */}
+      <div className="glass rounded-2xl overflow-hidden mb-6 shadow-card">
         <div className="aspect-video w-full">
           <iframe
-            title="Prudence Sector 22 Dwarka location"
+            title="Prudence School Sector 22 Dwarka"
             src={`https://www.google.com/maps?q=${VENUE.mapsQuery}&output=embed`}
-            className="w-full h-full"
+            className="w-full h-full border-0"
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
           />
         </div>
-        <div className="p-6 md:p-8">
+        <div className="p-6">
           <div className="flex items-start gap-4 mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-primary text-primary-foreground flex items-center justify-center shrink-0">
-              <MapPin className="w-6 h-6" />
+            <div className="w-11 h-11 rounded-xl bg-gradient-primary text-white flex items-center justify-center shrink-0">
+              <MapPin className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-display text-2xl font-bold">{VENUE.name}</h2>
-              <p className="text-muted-foreground">{VENUE.address}</p>
+              <h2 className="font-display text-xl font-bold">{VENUE.name}</h2>
+              <p className="text-sm text-muted-foreground">{VENUE.address}</p>
             </div>
           </div>
-          <Button asChild variant="hero">
-            <a href={`https://www.google.com/maps/dir/?api=1&destination=${VENUE.mapsQuery}`} target="_blank" rel="noopener noreferrer">
+          <Button asChild className="bg-gradient-primary text-white border-0 font-semibold hover:opacity-90">
+            <a href={`https://www.google.com/maps/dir/?api=1&destination=${VENUE.mapsQuery}`}
+              target="_blank" rel="noopener noreferrer">
               <Navigation className="w-4 h-4" /> Get Directions
             </a>
           </Button>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="glass rounded-3xl p-6 hover-lift">
-          <Train className="w-8 h-8 text-primary mb-3" />
-          <h3 className="font-display text-xl font-bold mb-2">By Metro</h3>
-          <p className="text-sm text-muted-foreground">Nearest station: Dwarka Sector 21 (Blue Line / Airport Express). 7 min by auto from the station.</p>
+      {/* Getting here */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="glass rounded-2xl p-6 hover-lift">
+          <div className="w-10 h-10 rounded-xl bg-primary/8 text-primary flex items-center justify-center mb-4">
+            <Train className="w-5 h-5" />
+          </div>
+          <h3 className="font-display font-bold text-lg mb-2">By Metro</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Nearest station: <span className="font-semibold text-foreground">Dwarka Sector 21</span> (Blue Line / Airport Express).
+            Approx. 7 minutes by auto-rickshaw from the station.
+          </p>
         </div>
-        <div className="glass rounded-3xl p-6 hover-lift">
-          <Car className="w-8 h-8 text-primary mb-3" />
-          <h3 className="font-display text-xl font-bold mb-2">By Car</h3>
-          <p className="text-sm text-muted-foreground">Ample on-site parking. 25 min from IGI Airport, 45 min from central New Delhi.</p>
+        <div className="glass rounded-2xl p-6 hover-lift">
+          <div className="w-10 h-10 rounded-xl bg-primary/8 text-primary flex items-center justify-center mb-4">
+            <Car className="w-5 h-5" />
+          </div>
+          <h3 className="font-display font-bold text-lg mb-2">By Car</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Ample on-site parking available.{" "}
+            <span className="font-semibold text-foreground">25 min</span> from IGI Airport,{" "}
+            <span className="font-semibold text-foreground">45 min</span> from central New Delhi.
+          </p>
         </div>
       </div>
     </section>
