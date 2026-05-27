@@ -1,0 +1,5 @@
+ALTER TABLE public.editions
+  ADD COLUMN IF NOT EXISTS stat_delegates text NOT NULL DEFAULT '500+',
+  ADD COLUMN IF NOT EXISTS stat_committees text NOT NULL DEFAULT '6',
+  ADD COLUMN IF NOT EXISTS stat_years text NOT NULL DEFAULT '10',
+  ADD COLUMN IF NOT EXISTS stat_portfolios text NOT NULL DEFAULT '100+';

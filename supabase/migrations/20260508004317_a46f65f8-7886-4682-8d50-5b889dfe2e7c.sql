@@ -1,0 +1,2 @@
+ALTER TABLE public.editions
+  ADD COLUMN IF NOT EXISTS hero_tagline text NOT NULL DEFAULT 'REGISTRATIONS OPEN';

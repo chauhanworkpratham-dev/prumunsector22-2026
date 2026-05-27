@@ -1,0 +1,205 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* PRUMUN Design System — Blue & White Glassmorphism */
+@layer base {
+  :root {
+    --background: 210 60% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 218 92% 48%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 210 100% 65%;
+    --primary-deep: 224 76% 32%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 15%;
+
+    --muted: 210 40% 95%;
+    --muted-foreground: 215 20% 45%;
+
+    --accent: 0 0% 8%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 56%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 42%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 10%;
+
+    --border: 214 32% 88%;
+    --input: 214 32% 88%;
+    --ring: 218 92% 48%;
+
+    --radius: 1rem;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(218 92% 48%) 0%, hsl(210 100% 65%) 100%);
+    --gradient-deep: linear-gradient(135deg, hsl(224 76% 32%) 0%, hsl(218 92% 48%) 50%, hsl(210 100% 65%) 100%);
+    --gradient-glass: linear-gradient(135deg, hsla(0,0%,100%,0.7) 0%, hsla(210,80%,95%,0.4) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(224 76% 32% / 0.92) 0%, hsl(218 92% 48% / 0.85) 50%, hsl(210 100% 65% / 0.8) 100%);
+
+    /* Shadows */
+    --shadow-glass: 0 8px 32px 0 hsla(218, 92%, 30%, 0.18);
+    --shadow-elegant: 0 20px 60px -15px hsla(218, 92%, 40%, 0.35);
+    --shadow-glow: 0 0 40px hsla(210, 100%, 65%, 0.4);
+    --shadow-soft: 0 4px 20px hsla(218, 50%, 30%, 0.08);
+
+    /* Animation */
+    --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 218 92% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222 47% 15%;
+    --sidebar-border: 214 32% 88%;
+    --sidebar-ring: 218 92% 48%;
+  }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 100% 65%;
+    --primary-foreground: 222 47% 6%;
+    --primary-glow: 210 100% 75%;
+    --primary-deep: 218 92% 70%;
+    --secondary: 217 33% 18%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 15%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 0 0% 100%;
+    --accent-foreground: 222 47% 6%;
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 65% 50%;
+    --success-foreground: 0 0% 10%;
+    --warning: 38 92% 60%;
+    --warning-foreground: 0 0% 10%;
+    --border: 217 33% 22%;
+    --input: 217 33% 22%;
+    --ring: 210 100% 65%;
+
+    --gradient-glass: linear-gradient(135deg, hsla(222,47%,12%,0.7) 0%, hsla(217,33%,18%,0.4) 100%);
+    --shadow-glass: 0 8px 32px 0 hsla(0, 0%, 0%, 0.4);
+    --shadow-elegant: 0 20px 60px -15px hsla(0, 0%, 0%, 0.6);
+    --shadow-soft: 0 4px 20px hsla(0, 0%, 0%, 0.3);
+
+    --sidebar-background: 222 47% 9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 210 100% 65%;
+    --sidebar-primary-foreground: 222 47% 6%;
+    --sidebar-accent: 217 33% 18%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 22%;
+    --sidebar-ring: 210 100% 65%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  html { scroll-behavior: smooth; }
+
+  /* Custom interactive scrollbar */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, hsl(var(--primary) / 0.55), hsl(var(--primary-glow) / 0.55));
+    border-radius: 9999px;
+    border: 3px solid hsl(var(--background));
+    background-clip: padding-box;
+    transition: background 0.3s ease;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    background-clip: padding-box;
+    border: 2px solid hsl(var(--background));
+  }
+  ::-webkit-scrollbar-corner { background: transparent; }
+  /* Firefox */
+  html { scrollbar-color: hsl(var(--primary) / 0.6) hsl(var(--background)); scrollbar-width: thin; }
+}
+
+@layer components {
+  .glass {
+    @apply backdrop-blur-xl bg-card/60 border border-border/60;
+    box-shadow: var(--shadow-glass);
+  }
+  .glass-dark {
+    @apply backdrop-blur-xl bg-foreground/5 border border-border/40;
+    box-shadow: var(--shadow-glass);
+  }
+  .glass-strong {
+    @apply backdrop-blur-2xl bg-card/85 border border-border;
+    box-shadow: var(--shadow-elegant);
+  }
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-primary);
+  }
+  .gradient-text-deep {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-deep);
+  }
+  .hover-lift {
+    @apply transition-all duration-300;
+  }
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-elegant);
+  }
+}
+
+@layer utilities {
+  .animate-float { animation: float 6s ease-in-out infinite; }
+  .animate-fade-in { animation: fadeIn 0.6s ease-out forwards; }
+  .animate-slide-up { animation: slideUp 0.7s var(--transition-smooth) forwards; }
+  .animate-glow-pulse { animation: glowPulse 2.5s ease-in-out infinite; }
+  .animate-shimmer { animation: shimmer 3s linear infinite; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 20px hsla(210, 100%, 65%, 0.3); }
+  50% { box-shadow: 0 0 40px hsla(210, 100%, 65%, 0.6); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}

@@ -1,0 +1,1 @@
+ALTER TABLE public.committees ADD COLUMN IF NOT EXISTS room_number text;
