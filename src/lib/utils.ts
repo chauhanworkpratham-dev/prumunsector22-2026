@@ -64,7 +64,9 @@ export const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
  * @example initials("Rahul Gandhi") // "RG"
  */
 export function initials(name: string): string {
-  return name
+  const clean = name.includes("@") ? name.split("@")[0] : name;
+  return clean
+    .replace(/[._-]/g, " ")
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)

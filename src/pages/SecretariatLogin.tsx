@@ -10,7 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { ShieldCheck, Lock, UserPlus, KeyRound, User, Loader2, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PendingApprovalBanner } from "@/components/secretariat/PendingApprovalBanner";
-import { upsertSecretariatProfile } from "@/lib/munApi";
 
 type Mode = "signin" | "signup";
 
