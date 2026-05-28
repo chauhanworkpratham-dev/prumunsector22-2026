@@ -83,11 +83,15 @@ const Secretariat = () => {
         </div>
 
         <Tabs value={tabs.find(t => t.id === activeTab) ? activeTab : (tabs[0]?.id ?? "delegates")} onValueChange={setActiveTab}>
-          <TabsList className="h-auto flex-wrap justify-start bg-transparent p-0 gap-2 mb-6">
+          <TabsList className="h-auto flex-wrap justify-start bg-transparent p-0 gap-1.5 mb-6">
             {tabs.map(t => (
               <TabsTrigger key={t.id} value={t.id}
-                className="data-[state=active]:bg-gradient-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-elegant glass rounded-xl px-4 py-2 text-xs md:text-sm font-semibold">
-                <t.icon className="w-3.5 h-3.5 mr-1.5" /> {t.label}
+                className={[
+                  "glass rounded-xl px-3 py-2 text-xs font-semibold border border-border/50 transition-all",
+                  "data-[state=active]:bg-gradient-primary data-[state=active]:text-white data-[state=active]:border-primary/40 data-[state=active]:shadow-sm",
+                  "hover:border-primary/30 hover:text-primary",
+                ].join(" ")}>
+                <t.icon className="w-3.5 h-3.5 mr-1.5 inline" /> {t.label}
               </TabsTrigger>
             ))}
           </TabsList>
