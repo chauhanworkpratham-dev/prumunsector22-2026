@@ -67,8 +67,8 @@ const Index = () => {
 
         <div className="relative z-10 container max-w-4xl mx-auto text-center pt-28 pb-24">
           {/* Crest */}
-          <div className="w-24 h-24 mx-auto mb-8 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center animate-float shadow-[0_8px_40px_rgba(26,110,240,0.4)]">
-            <img src={edition?.logo_url ?? crest} alt={brand} width={72} height={72} className="w-16 h-16 object-contain drop-shadow-2xl" />
+          <div className="w-32 h-32 mx-auto mb-8 rounded-2xl bg-white/15 backdrop-blur-xl border border-white/30 flex items-center justify-center animate-float shadow-[0_8px_40px_rgba(26,110,240,0.5)]">
+            <img src={edition?.logo_url ?? crest} alt={brand} width={96} height={96} className="w-20 h-20 object-contain drop-shadow-2xl" />
           </div>
 
           {/* Eyebrow pill */}
@@ -116,10 +116,10 @@ const Index = () => {
           </div>
 
           {/* Meta strip */}
-          <div className="flex flex-wrap items-center justify-center gap-5 mt-10 text-xs text-white/45 animate-fade-in" style={{ animationDelay: "340ms" }}>
-            <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-[#60a5fa]" /> {dateLabel}</span>
-            <span className="w-px h-3 bg-white/20 hidden sm:block" />
-            <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-[#60a5fa]" /> {edition?.venue_name ?? "Prudence School, Dwarka"}</span>
+          <div className="flex flex-wrap items-center justify-center gap-5 mt-10 text-xs text-white/80 animate-fade-in backdrop-blur-sm bg-white/5 px-6 py-3 rounded-full inline-flex mx-auto" style={{ animationDelay: "340ms" }}>
+            <span className="flex items-center gap-1.5 font-semibold"><Calendar className="w-3.5 h-3.5 text-[#93c5fd]" /> {dateLabel}</span>
+            <span className="w-px h-3 bg-white/30 hidden sm:block" />
+            <span className="flex items-center gap-1.5 font-semibold"><MapPin className="w-3.5 h-3.5 text-[#93c5fd]" /> {edition?.venue_name ?? "Prudence School, Dwarka"}</span>
           </div>
         </div>
       </section>

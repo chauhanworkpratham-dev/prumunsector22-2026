@@ -95,13 +95,13 @@ export const Navbar = () => {
 
         {/* Brand */}
         <Link to="/" className="flex items-center gap-3 group shrink-0">
-          <div className="w-9 h-9 rounded-xl overflow-hidden ring-1 ring-primary/20 transition-transform group-hover:scale-105">
+          <div className="w-11 h-11 rounded-xl overflow-hidden ring-2 ring-primary/30 transition-transform group-hover:scale-110 shadow-md">
             <img src={edition?.header_logo_url ?? edition?.logo_url ?? crest}
-              alt={brand} width={36} height={36} className="w-full h-full object-contain" />
+              alt={brand} width={44} height={44} className="w-full h-full object-contain" />
           </div>
           <div className="leading-none">
-            <div className="font-display font-bold text-[17px] tracking-tight text-foreground">{brand}</div>
-            <div className="text-[8px] tracking-[0.28em] text-primary/70 font-semibold uppercase mt-0.5">{tag}</div>
+            <div className="font-display font-bold text-[18px] tracking-tight text-foreground">{brand}</div>
+            <div className="text-[8px] tracking-[0.28em] text-primary font-semibold uppercase mt-0.5">{tag}</div>
           </div>
         </Link>
 

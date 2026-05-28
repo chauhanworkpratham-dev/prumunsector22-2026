@@ -80,7 +80,7 @@ export const SecretariatsPage = ({ type }: { type: "secretariat" | "staff" }) =>
       <PageBackdrop pageKey="venue" />
 
       {/* ── Header ── */}
-      <section className="pt-36 pb-10 container text-center">
+      <section className="pt-48 pb-10 container text-center">
         <p className="section-label">{type === "secretariat" ? "Leadership Board" : "Officers & Staff"}</p>
         <h1 className="font-display text-5xl md:text-6xl font-bold gradient-text-deep mb-4 leading-tight">
           {type === "secretariat" ? "The Secretariat" : "Our Staff"}

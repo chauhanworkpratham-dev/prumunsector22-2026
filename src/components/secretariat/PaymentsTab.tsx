@@ -12,7 +12,7 @@ import {
 } from "@/lib/munApi";
 import {
   CreditCard, Save, Upload, CheckCircle2, XCircle, Search, Download,
-  QrCode, Eye, Banknote, Wallet, Ban, Filter,
+  QrCode, Eye, Banknote, Wallet, Ban, Filter, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import * as XLSX from "xlsx";
@@ -169,85 +169,121 @@ export const PaymentsTab = ({ edition, onSaved }: { edition: Edition; onSaved: (
       </div>
 
       {/* ===== Configuration ===== */}
-      <div className="glass-strong rounded-3xl p-6 space-y-5">
-        <div className="flex items-center gap-2 mb-1">
+      <div className="glass-strong rounded-3xl p-6 space-y-6">
+        <div className="flex items-center gap-2">
           <CreditCard className="w-5 h-5 text-primary" />
           <h2 className="font-display text-xl font-bold">Payment Configuration</h2>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-4">
-          {[
-            { key: "payment_mode_delegate", label: "Delegates" },
-            { key: "payment_mode_eb", label: "Executive Board" },
-            { key: "payment_mode_oc", label: "Organising Committee" },
-          ].map(cat => (
-            <div key={cat.key} className="space-y-2">
-              <Label>{cat.label}</Label>
-              <div className="flex gap-1">
-                {MODES.map(m => (
-                  <button key={m.v} type="button"
-                    onClick={() => setForm({ ...form, [cat.key]: m.v } as any)}
-                    className={cn("flex-1 px-2 py-2 text-xs font-bold rounded-lg border-2 transition-all flex items-center justify-center gap-1",
-                      (form as any)[cat.key] === m.v
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border hover:border-primary/40")}>
-                    <m.icon className="w-3 h-3" /> {m.label}
-                  </button>
-                ))}
+        {/* Quick Payment Mode Selection */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">Payment Methods by Role</h3>
+          <div className="grid md:grid-cols-3 gap-4">
+            {[
+              { key: "payment_mode_delegate", label: "Delegates" },
+              { key: "payment_mode_eb", label: "Executive Board" },
+              { key: "payment_mode_oc", label: "Organising Committee" },
+            ].map(cat => (
+              <div key={cat.key} className="glass rounded-2xl p-3">
+                <Label className="text-xs font-semibold text-muted-foreground mb-2 block">{cat.label}</Label>
+                <div className="flex gap-1">
+                  {MODES.map(m => (
+                    <button key={m.v} type="button"
+                      onClick={() => setForm({ ...form, [cat.key]: m.v } as any)}
+                      className={cn("flex-1 px-2 py-2 text-[10px] font-bold rounded-lg border-2 transition-all flex items-center justify-center gap-1 whitespace-nowrap",
+                        (form as any)[cat.key] === m.v
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border/50 hover:border-primary/40")}>
+                      <m.icon className="w-3 h-3" /> {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Payment Details (Collapsed Section) */}
+        <div className="border-t border-border/40 pt-4">
+          <details className="group cursor-pointer">
+            <summary className="text-sm font-semibold text-foreground flex items-center gap-2 hover:text-primary transition-colors">
+              <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
+              Payment Details (UPI, Bank)
+            </summary>
+            <div className="mt-4 space-y-3 pl-6">
+              <div className="space-y-1.5">
+                <Label className="text-xs">UPI ID</Label>
+                <Input placeholder="prumun@upi" value={form.upi_id} onChange={e => setForm({ ...form, upi_id: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Bank Details</Label>
+                <Input placeholder="Account, IFSC, Holder Name" value={form.bank_details} onChange={e => setForm({ ...form, bank_details: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Instructions (shown to users)</Label>
+                <Textarea rows={2} placeholder="e.g., Send payment via UPI to..." value={form.payment_instructions} onChange={e => setForm({ ...form, payment_instructions: e.target.value })} className="text-sm" />
               </div>
             </div>
-          ))}
+          </details>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label>UPI ID</Label>
-            <Input placeholder="prumun@upi" value={form.upi_id} onChange={e => setForm({ ...form, upi_id: e.target.value })} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Bank details (account, IFSC, name)</Label>
-            <Input value={form.bank_details} onChange={e => setForm({ ...form, bank_details: e.target.value })} />
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label>Payment instructions (shown to users)</Label>
-          <Textarea rows={2} value={form.payment_instructions} onChange={e => setForm({ ...form, payment_instructions: e.target.value })} />
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-4 items-start">
-          <div className="space-y-1.5">
-            <Label>Payment QR image</Label>
-            <Input type="file" accept="image/*" onChange={e => setQrFile(e.target.files?.[0] ?? null)} />
+        {/* Payment QR */}
+        <div className="border-t border-border/40 pt-4">
+          <Label className="text-sm font-semibold">Payment QR Code</Label>
+          <div className="mt-3 grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Input type="file" accept="image/*" onChange={e => setQrFile(e.target.files?.[0] ?? null)} className="text-sm" />
+              <p className="text-xs text-muted-foreground">JPG, PNG • max 5 MB</p>
+            </div>
             {(qrFile || form.payment_qr_url) && (
-              <img
-                src={qrFile ? URL.createObjectURL(qrFile) : form.payment_qr_url}
-                alt="Payment QR"
-                className="mt-2 h-40 rounded-xl border border-border object-contain bg-white p-2"
-              />
+              <div className="flex items-center justify-center">
+                <img
+                  src={qrFile ? URL.createObjectURL(qrFile) : form.payment_qr_url}
+                  alt="Payment QR"
+                  className="h-32 rounded-xl border border-primary/30 object-contain bg-white p-2"
+                />
+              </div>
             )}
           </div>
         </div>
 
-        {/* Editable copy */}
-        <div className="pt-4 border-t border-border">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground font-bold mb-3">Editable text shown to users</p>
-          <div className="grid md:grid-cols-2 gap-3">
-            {([
-              ["txt_pay_upi_btn", "Pay-via-UPI button label"],
-              ["txt_upload_receipt", "Upload receipt label"],
-              ["txt_pay_cash_notice", "Cash payment notice"],
-              ["txt_auto_lock_notice", "No-payment / auto-lock notice"],
-              ["txt_receipt_uploaded", "Receipt uploaded confirmation"],
-              ["txt_payment_rejected", "Receipt rejected message"],
-              ["txt_locked_awaiting_entry", "Locked, awaiting entry message"],
-              ["txt_change_portfolio_btn", "Change-portfolio button label"],
-              ["txt_needs_reselection", "Needs-reselection message"],
-            ] as const).map(([key, label]) => (
-              <div key={key} className="space-y-1.5">
-                <Label className="text-xs">{label}</Label>
-                <Input value={(form as any)[key]} onChange={e => setForm({ ...form, [key]: e.target.value } as any)} />
-              </div>
+        {/* User-Facing Text (Collapsed) */}
+        <div className="border-t border-border/40 pt-4">
+          <details className="group cursor-pointer">
+            <summary className="text-sm font-semibold text-foreground flex items-center gap-2 hover:text-primary transition-colors">
+              <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
+              Customize User Messages
+            </summary>
+            <div className="mt-4 space-y-3 pl-6 max-h-96 overflow-y-auto">
+              {([
+                ["txt_pay_upi_btn", "Pay via UPI button"],
+                ["txt_upload_receipt", "Upload receipt label"],
+                ["txt_pay_cash_notice", "Cash payment notice"],
+                ["txt_auto_lock_notice", "Auto-lock (no payment) message"],
+                ["txt_receipt_uploaded", "Receipt confirmed message"],
+                ["txt_payment_rejected", "Receipt rejected message"],
+                ["txt_locked_awaiting_entry", "Locked, awaiting entry"],
+                ["txt_change_portfolio_btn", "Change portfolio button"],
+                ["txt_needs_reselection", "Needs reselection message"],
+              ] as const).map(([key, label]) => (
+                <div key={key} className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">{label}</Label>
+                  <Input value={(form as any)[key]} onChange={e => setForm({ ...form, [key]: e.target.value } as any)} className="text-xs" />
+                </div>
+              ))}
+            </div>
+          </details>
+        </div>
+
+        {/* Save Button */}
+        <div className="flex justify-end gap-2 border-t border-border/40 pt-4">
+          <Button variant="outline" onClick={() => { setQrFile(null); refresh(); }}>Cancel</Button>
+          <Button className="bg-gradient-primary text-white" onClick={saveConfig} disabled={savingCfg}>
+            {savingCfg ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            {savingCfg ? "Saving..." : "Save Configuration"}
+          </Button>
+        </div>
+      </div>
             ))}
           </div>
         </div>

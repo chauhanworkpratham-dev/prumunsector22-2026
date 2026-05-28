@@ -8,8 +8,9 @@ import {
   getSignedIdUrl, uploadIdImage, verifyForEntry, revokeEntryVerification,
   type Registration, type Committee,
 } from "@/lib/munApi";
-import { CheckCircle2, Lock, Trash2, Search, Download, Users, Eye, Pencil, X, Save, Upload, QrCode, Unlock, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Lock, Trash2, Search, Download, Users, Eye, Pencil, X, Save, Upload, QrCode, Unlock, ShieldCheck, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { QRCodeCanvas } from "qrcode.react";
 
 type RoleFilter = "delegate" | "executive_board" | "organising_committee";
 
@@ -25,6 +26,7 @@ export const DelegatesTab = ({ editionId, roleFilter = "delegate" }: { editionId
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "pending" | "verified">("all");
   const [viewing, setViewing] = useState<{ url: string; name: string } | null>(null);
+  const [viewingQR, setViewingQR] = useState<Registration | null>(null);
   const [editing, setEditing] = useState<Registration | null>(null);
 
   const refresh = () => Promise.all([getRegistrations(editionId), getCommittees(editionId)])
@@ -183,9 +185,14 @@ export const DelegatesTab = ({ editionId, roleFilter = "delegate" }: { editionId
                     </Button>
                   )}
                   {r.entry_verified_at && (
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => revokeEntry(r.id)}>
-                      <Unlock className="w-3 h-3" /> Revoke entry
-                    </Button>
+                    <>
+                      <Button variant="outline" size="sm" onClick={() => setViewingQR(r)}>
+                        <QrCode className="w-3 h-3" /> View QR
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => revokeEntry(r.id)}>
+                        <Unlock className="w-3 h-3" /> Revoke entry
+                      </Button>
+                    </>
                   )}
                   <Button variant="ghost" size="sm" onClick={() => remove(r.id)} className="text-destructive hover:bg-destructive/10"><Trash2 className="w-3 h-3" /></Button>
                 </div>
@@ -204,6 +211,36 @@ export const DelegatesTab = ({ editionId, roleFilter = "delegate" }: { editionId
             ) : (
               <img src={viewing.url} alt="ID document" className="w-full max-h-[70vh] object-contain rounded-xl" />
             )}
+          </div>
+        </div>
+      )}
+
+      {viewingQR && (
+        <div className="fixed inset-0 z-50 bg-foreground/70 flex items-center justify-center p-4" onClick={() => setViewingQR(null)}>
+          <div className="glass-strong rounded-3xl p-8 max-w-md w-full text-center" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-bold flex-1">{viewingQR.full_name}'s Entry QR</h3>
+              <Button variant="ghost" size="sm" onClick={() => setViewingQR(null)}><X className="w-4 h-4" /></Button>
+            </div>
+            <div className="bg-white p-6 rounded-2xl inline-block mb-4">
+              <QRCodeCanvas value={`prumun-entry:${viewingQR.id}`} size={200} level="H" includeMargin />
+            </div>
+            <div className="space-y-2 text-sm">
+              <p className="text-muted-foreground">Committee: <span className="font-semibold text-foreground">{committees.find(c => c.id === viewingQR.committee_id)?.short_name || "—"}</span></p>
+              <p className="text-muted-foreground">Portfolio: <span className="font-semibold text-foreground">{viewingQR.portfolio || viewingQR.eb_role || "—"}</span></p>
+              <p className="text-xs text-muted-foreground">Generated: {viewingQR.entry_verified_at ? new Date(viewingQR.entry_verified_at).toLocaleString() : "—"}</p>
+            </div>
+            <Button className="w-full mt-6 bg-gradient-primary text-white" onClick={() => {
+              const qrRef = document.querySelector('[data-qr-code]');
+              if (qrRef instanceof HTMLCanvasElement) {
+                const link = document.createElement('a');
+                link.download = `${viewingQR.full_name}-entry-qr.png`;
+                link.href = qrRef.toDataURL();
+                link.click();
+              }
+            }}>
+              Download QR
+            </Button>
           </div>
         </div>
       )}
