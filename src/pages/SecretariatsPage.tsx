@@ -59,7 +59,7 @@ export const SecretariatsPage = ({ type }: { type: "secretariat" | "staff" }) =>
 
   const sendMessage = async () => {
     setSending(true);
-    await new Promise(r => setTimeout(r, 600)); // simulate network
+    await new Promise(r => setTimeout(r, 600));
     const stored = localStorage.getItem("mun_secretariat_messages");
     const msgs = stored ? JSON.parse(stored) : [];
     localStorage.setItem("mun_secretariat_messages", JSON.stringify([...msgs, {
@@ -79,10 +79,10 @@ export const SecretariatsPage = ({ type }: { type: "secretariat" | "staff" }) =>
       <Navbar />
       <PageBackdrop pageKey="venue" />
 
-      {/* ── Header ── */}
-      <section className="pt-36 pb-10 container text-center">
+      {/* ── Header — increased top padding to avoid navbar clip ── */}
+      <section className="pt-28 md:pt-32 pb-10 container text-center">
         <p className="section-label">{type === "secretariat" ? "Leadership Board" : "Officers & Staff"}</p>
-        <h1 className="font-display text-5xl md:text-6xl font-bold gradient-text-deep mb-4 leading-tight">
+        <h1 className="font-display text-4xl md:text-6xl font-bold gradient-text-deep mb-4 leading-tight mt-2">
           {type === "secretariat" ? "The Secretariat" : "Our Staff"}
         </h1>
         <p className="text-muted-foreground text-sm max-w-xl mx-auto mb-8">
@@ -90,7 +90,6 @@ export const SecretariatsPage = ({ type }: { type: "secretariat" | "staff" }) =>
           Reach out directly through the message channel below.
         </p>
 
-        {/* Layout toggle — glass tab bar */}
         <div className="inline-flex tab-bar">
           <button className="tab-item" aria-selected={layout === "grid"} onClick={() => setLayout("grid")}>
             <LayoutGrid className="w-3.5 h-3.5 inline mr-1.5" />Grid
@@ -112,8 +111,7 @@ export const SecretariatsPage = ({ type }: { type: "secretariat" | "staff" }) =>
             {filtered.map((m, i) => (
               <div key={m.id} className="glass rounded-2xl p-6 hover-lift flex flex-col items-center text-center gap-4 animate-fade-in"
                 style={{ animationDelay: `${i * 60}ms` }}>
-                {/* Avatar */}
-                <div className="w-20 h-20 rounded-2xl overflow-hidden ring-2 ring-primary/20 shadow-card bg-secondary shrink-0">
+                <div className="w-24 h-24 rounded-2xl overflow-hidden ring-2 ring-primary/20 shadow-card bg-secondary shrink-0">
                   <img src={m.photo} alt={m.name} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1">
@@ -165,7 +163,6 @@ export const SecretariatsPage = ({ type }: { type: "secretariat" | "staff" }) =>
           <div className="glass-strong rounded-3xl p-6 md:p-8 max-w-lg w-full animate-slide-up"
             onClick={e => e.stopPropagation()}>
 
-            {/* Modal header */}
             <div className="flex items-center justify-between gap-4 mb-5 pb-4 border-b border-border/50">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl overflow-hidden ring-1 ring-primary/20 bg-secondary">
@@ -184,7 +181,6 @@ export const SecretariatsPage = ({ type }: { type: "secretariat" | "staff" }) =>
               )}
             </div>
 
-            {/* Step indicator */}
             {phase !== 3 && (
               <div className="flex items-center gap-1 mb-6 text-[10px] font-bold tracking-widest text-muted-foreground">
                 {(["YOUR DETAILS", "MESSAGE"] as const).map((label, idx) => (
@@ -199,7 +195,6 @@ export const SecretariatsPage = ({ type }: { type: "secretariat" | "staff" }) =>
               </div>
             )}
 
-            {/* Phase 1 */}
             {phase === 1 && (
               <div className="space-y-3 animate-fade-in">
                 <div className="space-y-1.5">
@@ -241,7 +236,6 @@ export const SecretariatsPage = ({ type }: { type: "secretariat" | "staff" }) =>
               </div>
             )}
 
-            {/* Phase 2 */}
             {phase === 2 && (
               <div className="space-y-3 animate-fade-in">
                 <div className="space-y-1.5">
@@ -269,7 +263,6 @@ export const SecretariatsPage = ({ type }: { type: "secretariat" | "staff" }) =>
               </div>
             )}
 
-            {/* Phase 3 — Success */}
             {phase === 3 && (
               <div className="text-center py-6 space-y-4 animate-fade-in">
                 <div className="w-16 h-16 mx-auto rounded-2xl bg-success/10 text-success flex items-center justify-center">

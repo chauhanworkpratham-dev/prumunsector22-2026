@@ -5,7 +5,7 @@ import { NavLink } from "@/components/NavLink";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useActiveEdition } from "@/hooks/useActiveEdition";
 import { useSession } from "@/hooks/useSession";
-import { getRegistrationByEmail } from "@/lib/munApi";
+import { getRegistrationByEmail, getSignedIdUrl } from "@/lib/munApi";
 import crest from "@/assets/prumun-crest.png";
 import { cn, initials } from "@/lib/utils";
 
@@ -18,6 +18,7 @@ const NAV = [
   { to: "/schedule",     label: "Schedule"               },
   { to: "/brochure",     label: "Brochure"               },
   { to: "/venue",        label: "Venue"                  },
+  { to: "/about",        label: "About"                  },
 ] as const;
 
 export const Navbar = () => {
@@ -25,21 +26,32 @@ export const Navbar = () => {
   const { edition } = useActiveEdition();
   const { delegateEmail, secUser, isDelegate, isSecretariat, logoutDelegate, logoutSec } = useSession();
 
-  const [scrolled,   setScrolled]   = useState(false);
-  const [menuOpen,   setMenuOpen]   = useState(false);
+  const [scrolled,    setScrolled]    = useState(false);
+  const [menuOpen,    setMenuOpen]    = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [delegateName, setDelegateName] = useState<string | null>(null);
+  const [avatarUrl,   setAvatarUrl]   = useState<string | null>(null);
 
   const profileRef = useRef<HTMLDivElement>(null);
 
   const brand = edition?.name?.split(" ")[0] ?? "PRUMUN";
   const tag   = edition?.name?.split(" ").slice(1).join(" ") ?? "2026";
 
-  // Load delegate's full name for the avatar
+  // Load delegate's full name + photo for the avatar
   useEffect(() => {
     if (!isDelegate || !delegateEmail || !edition) return;
-    getRegistrationByEmail(edition.id, delegateEmail)
-      .then(r => { if (r) setDelegateName(r.full_name); });
+    getRegistrationByEmail(edition.id, delegateEmail).then(r => {
+      if (r) {
+        setDelegateName(r.full_name);
+        // load profile photo if any
+        if (r.id_image_path) {
+          getSignedIdUrl(r.id_image_path).then(url => {
+            // only use if it's an image (not PDF)
+            if (url && !r.id_image_path.toLowerCase().endsWith(".pdf")) setAvatarUrl(url);
+          });
+        }
+      }
+    });
   }, [isDelegate, delegateEmail, edition]);
 
   useEffect(() => {
@@ -55,18 +67,14 @@ export const Navbar = () => {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // Close profile dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
-        setProfileOpen(false);
-      }
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Determine what to show on the right side
   const loggedIn = isDelegate || isSecretariat;
   const displayName = isSecretariat
     ? (secUser?.email ?? "Secretariat")
@@ -75,86 +83,120 @@ export const Navbar = () => {
 
   const handleLogout = async () => {
     setProfileOpen(false);
-    if (isSecretariat) {
-      await logoutSec();
-      navigate("/");
-    } else {
-      logoutDelegate();
-      navigate("/");
-    }
+    if (isSecretariat) { await logoutSec(); navigate("/"); }
+    else { logoutDelegate(); navigate("/"); }
   };
 
   const profileHref = isSecretariat ? "/secretariat" : "/delegate";
 
+  /* ── Whether the page hero is dark (needs white nav text when unscrolled) ── */
+  const isAtTop = !scrolled;
+  const isHomePage = typeof window !== "undefined" && window.location.pathname === "/";
+  const heroDark = isHomePage && isAtTop; // hero has hardcoded dark bg
+
   return (
     <header className={cn(
       "fixed top-0 inset-x-0 z-50 transition-all duration-300",
-      scrolled ? "glass-nav py-2.5" : "bg-transparent py-5",
+      scrolled
+        ? "glass-nav py-2.5"
+        : heroDark
+          ? "bg-transparent py-5"
+          : "bg-white/90 dark:bg-background/90 backdrop-blur-md border-b border-border/40 py-3 shadow-sm",
     )}>
       <div className="container flex items-center justify-between">
 
-        {/* Brand */}
+        {/* Brand — bigger logo */}
         <Link to="/" className="flex items-center gap-3 group shrink-0">
-          <div className="w-9 h-9 rounded-xl overflow-hidden ring-1 ring-primary/20 transition-transform group-hover:scale-105">
-            <img src={edition?.header_logo_url ?? edition?.logo_url ?? crest}
-              alt={brand} width={36} height={36} className="w-full h-full object-contain" />
+          <div className="w-11 h-11 rounded-xl overflow-hidden ring-2 ring-primary/30 transition-transform group-hover:scale-105 shadow-md bg-white flex items-center justify-center">
+            <img
+              src={edition?.header_logo_url ?? edition?.logo_url ?? crest}
+              alt={brand}
+              width={44}
+              height={44}
+              className="w-10 h-10 object-contain"
+            />
           </div>
           <div className="leading-none">
-            <div className="font-display font-bold text-[17px] tracking-tight text-foreground">{brand}</div>
-            <div className="text-[8px] tracking-[0.28em] text-primary/70 font-semibold uppercase mt-0.5">{tag}</div>
+            <div className={cn(
+              "font-display font-bold text-[18px] tracking-tight transition-colors",
+              heroDark ? "text-white" : "text-foreground"
+            )}>{brand}</div>
+            <div className={cn(
+              "text-[8px] tracking-[0.28em] font-semibold uppercase mt-0.5 transition-colors",
+              heroDark ? "text-white/70" : "text-primary/70"
+            )}>{tag}</div>
           </div>
         </Link>
 
         {/* Desktop nav */}
         <nav className="hidden lg:flex items-center gap-0.5" aria-label="Main">
           {NAV.map(l => (
-            <NavLink key={l.to} to={l.to} end={"end" in l ? (l as any).end : undefined}>{l.label}</NavLink>
+            <NavLink
+              key={l.to}
+              to={l.to}
+              end={"end" in l ? (l as any).end : undefined}
+              className={heroDark ? "text-white/80 hover:text-white hover:bg-white/10" : ""}
+            >
+              {l.label}
+            </NavLink>
           ))}
         </nav>
 
-        {/* Desktop right side */}
+        {/* Desktop right */}
         <div className="hidden lg:flex items-center gap-2">
           <ThemeToggle />
 
           {loggedIn ? (
-            /* ── Profile avatar button ── */
             <div ref={profileRef} className="relative">
               <button
                 onClick={() => setProfileOpen(v => !v)}
-                className="flex items-center gap-2 glass rounded-xl px-3 py-2 hover:border-primary/40 transition-all"
-                aria-haspopup="true" aria-expanded={profileOpen}
+                className={cn(
+                  "flex items-center gap-2 rounded-xl px-3 py-2 transition-all",
+                  heroDark
+                    ? "bg-white/10 border border-white/20 hover:bg-white/20"
+                    : "glass hover:border-primary/40"
+                )}
+                aria-haspopup="true"
+                aria-expanded={profileOpen}
               >
-                {/* Avatar circle */}
-                <div className="w-7 h-7 rounded-full bg-gradient-primary text-white flex items-center justify-center text-xs font-bold shrink-0">
-                  {avatarLetters}
+                {/* Avatar circle — show photo if available */}
+                <div className="w-7 h-7 rounded-full overflow-hidden bg-gradient-primary text-white flex items-center justify-center text-xs font-bold shrink-0">
+                  {avatarUrl
+                    ? <img src={avatarUrl} alt={avatarLetters} className="w-full h-full object-cover" />
+                    : avatarLetters
+                  }
                 </div>
-                <span className="text-sm font-semibold max-w-[140px] truncate text-foreground">
+                <span className={cn(
+                  "text-sm font-semibold max-w-[140px] truncate",
+                  heroDark ? "text-white" : "text-foreground"
+                )}>
                   {displayName.includes("@") ? displayName.split("@")[0] : displayName.split(" ")[0]}
                 </span>
-                <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground transition-transform", profileOpen && "rotate-180")} />
+                <ChevronDown className={cn(
+                  "w-3.5 h-3.5 transition-transform",
+                  profileOpen && "rotate-180",
+                  heroDark ? "text-white/70" : "text-muted-foreground"
+                )} />
               </button>
 
-              {/* Dropdown */}
               {profileOpen && (
                 <div className="absolute right-0 top-full mt-2 w-56 glass-strong rounded-2xl py-1.5 shadow-elegant animate-fade-in border border-border/60 z-50">
-                  {/* User info header */}
                   <div className="px-4 py-3 border-b border-border/50">
-                    <div className="w-10 h-10 rounded-full bg-gradient-primary text-white flex items-center justify-center text-sm font-bold mx-auto mb-2">
-                      {avatarLetters}
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-primary text-white flex items-center justify-center text-sm font-bold mx-auto mb-2">
+                      {avatarUrl
+                        ? <img src={avatarUrl} alt={avatarLetters} className="w-full h-full object-cover" />
+                        : avatarLetters
+                      }
                     </div>
                     <p className="text-xs font-semibold text-center truncate">{displayName}</p>
                     <p className="text-[10px] text-muted-foreground text-center mt-0.5">
                       {isSecretariat ? "Secretariat" : "Delegate"}
                     </p>
                   </div>
-
                   <div className="p-1.5 space-y-0.5">
                     <Link to={profileHref} onClick={() => setProfileOpen(false)}
                       className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm hover:bg-primary/8 hover:text-primary transition-colors w-full">
-                      {isSecretariat
-                        ? <><ShieldCheck className="w-4 h-4" /> Admin Portal</>
-                        : <><User className="w-4 h-4" /> My Profile</>
-                      }
+                      {isSecretariat ? <><ShieldCheck className="w-4 h-4" /> Admin Portal</> : <><User className="w-4 h-4" /> My Profile</>}
                     </Link>
                     {isDelegate && (
                       <Link to="/delegate" onClick={() => setProfileOpen(false)}
@@ -172,10 +214,14 @@ export const Navbar = () => {
               )}
             </div>
           ) : (
-            /* ── Guest buttons ── */
             <>
               <Link to="/login"
-                className="px-4 py-2 rounded-xl text-sm font-semibold text-foreground/70 hover:text-foreground hover:bg-secondary/60 transition-all">
+                className={cn(
+                  "px-4 py-2 rounded-xl text-sm font-semibold transition-all",
+                  heroDark
+                    ? "text-white/80 hover:text-white hover:bg-white/10"
+                    : "text-foreground/70 hover:text-foreground hover:bg-secondary/60"
+                )}>
                 Login
               </Link>
               <Link to="/register"
@@ -191,14 +237,23 @@ export const Navbar = () => {
           <ThemeToggle />
           {loggedIn && (
             <Link to={profileHref}
-              className="w-8 h-8 rounded-full bg-gradient-primary text-white flex items-center justify-center text-xs font-bold">
-              {avatarLetters}
+              className="w-8 h-8 rounded-full overflow-hidden bg-gradient-primary text-white flex items-center justify-center text-xs font-bold">
+              {avatarUrl
+                ? <img src={avatarUrl} alt={avatarLetters} className="w-full h-full object-cover" />
+                : avatarLetters
+              }
             </Link>
           )}
-          <button onClick={() => setMenuOpen(v => !v)}
-            className="p-2 rounded-xl hover:bg-secondary/60 transition-colors"
+          <button
+            onClick={() => setMenuOpen(v => !v)}
+            className={cn(
+              "p-2 rounded-xl transition-colors",
+              heroDark ? "text-white hover:bg-white/10" : "hover:bg-secondary/60"
+            )}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={menuOpen} aria-controls="mobile-nav">
+            aria-expanded={menuOpen}
+            aria-controls="mobile-nav"
+          >
             {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
@@ -219,7 +274,9 @@ export const Navbar = () => {
             <div className="flex flex-col gap-1 px-1">
               <Link to={profileHref} onClick={() => setMenuOpen(false)}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-secondary/60 transition-colors">
-                <div className="w-6 h-6 rounded-full bg-gradient-primary text-white flex items-center justify-center text-[10px] font-bold">{avatarLetters}</div>
+                <div className="w-6 h-6 rounded-full overflow-hidden bg-gradient-primary text-white flex items-center justify-center text-[10px] font-bold">
+                  {avatarUrl ? <img src={avatarUrl} alt={avatarLetters} className="w-full h-full object-cover" /> : avatarLetters}
+                </div>
                 {isSecretariat ? "Admin Portal" : "My Profile"}
               </Link>
               <button onClick={handleLogout}
