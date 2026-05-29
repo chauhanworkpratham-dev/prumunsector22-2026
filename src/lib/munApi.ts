@@ -729,7 +729,7 @@ export function downloadCSV(filename: string, headers: string[], rows: (string |
 export type TabKey =
   | "delegates" | "eb" | "oc" | "attendance" | "announcements" | "schedule"
   | "brochure" | "training" | "sessions" | "committees" | "contacts"
-  | "members" | "settings" | "editions" | "qr_messages" | "disclaimers" | "ai_chats" | "backgrounds" | "payments";
+  | "members" | "settings" | "editions" | "qr_messages" | "disclaimers" | "ai_chats" | "backgrounds" | "payments" | "grades";
 
 export type PermissionLevel = "none" | "view" | "edit" | "delete";
 

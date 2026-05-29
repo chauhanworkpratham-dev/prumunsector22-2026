@@ -22,10 +22,12 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { cn, initials, formatDate } from "@/lib/utils";
 import { AIAssistant } from "@/components/delegate/AIAssistant";
+import { EBGradingTab } from "@/components/delegate/EBGradingTab";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getSignedIdUrl } from "@/lib/munApi";
 
-type MainTab = "profile" | "portfolio" | "training" | "chat";
+type MainTab = "profile" | "portfolio" | "training" | "chat" | "grading";
 
 const Delegate = () => {
   const navigate = useNavigate();
@@ -40,6 +42,7 @@ const Delegate = () => {
   const [loading,    setLoading]   = useState(true);
   const [occupied,   setOccupied]  = useState<Record<string, string>>({});
   const [now,        setNow]       = useState(Date.now());
+  const [avatarUrl,  setAvatarUrl] = useState<string | null>(null);
 
   // Portfolio swap
   const [swapOpen,        setSwapOpen]       = useState(false);
@@ -90,6 +93,10 @@ const Delegate = () => {
         getTrainingSessions(edition.id), getOccupiedPortfolios(edition.id),
       ]);
       setComm(cs); setRes(rs); setSess(ss); setOccupied(occ);
+      // Load photo if available
+      if (r?.id_image_path && !r.id_image_path.toLowerCase().endsWith(".pdf")) {
+        getSignedIdUrl(r.id_image_path).then(url => { if (url) setAvatarUrl(url); });
+      }
       setLoading(false);
     })();
   }, [edition, delegateEmail, navigate]);
@@ -178,10 +185,11 @@ const Delegate = () => {
   }
 
   const TABS: { id: MainTab; label: string; Icon: any }[] = [
-    { id: "profile",   label: "Profile",    Icon: User          },
-    { id: "portfolio", label: "Portfolio",  Icon: LayoutDashboard},
+    { id: "profile",   label: "Profile",    Icon: User           },
+    { id: "portfolio", label: isEB ? "My Role" : "Portfolio", Icon: LayoutDashboard },
     { id: "training",  label: "Training",   Icon: BookOpen       },
     { id: "chat",      label: "AI Prep",    Icon: MessageCircle  },
+    ...(isEB ? [{ id: "grading" as MainTab, label: "Grading", Icon: Gavel }] : []),
   ];
 
   return (
@@ -191,9 +199,12 @@ const Delegate = () => {
       <div className="container max-w-5xl pt-28 pb-24">
         {/* ── Profile header card ── */}
         <div className="glass-strong rounded-3xl p-6 md:p-8 mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-6">
-          {/* Avatar */}
-          <div className="w-20 h-20 rounded-2xl bg-gradient-primary text-white flex items-center justify-center font-display text-3xl font-bold shrink-0 shadow-elegant animate-glow-pulse">
-            {initials(reg.full_name)}
+          {/* Avatar — shows photo if uploaded */}
+          <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gradient-primary text-white flex items-center justify-center font-display text-3xl font-bold shrink-0 shadow-elegant animate-glow-pulse">
+            {avatarUrl
+              ? <img src={avatarUrl} alt={reg.full_name} className="w-full h-full object-cover" />
+              : initials(reg.full_name)
+            }
           </div>
 
           <div className="flex-1 min-w-0">
@@ -256,28 +267,50 @@ const Delegate = () => {
               </div>
             </div>
 
-            {/* Conference status */}
+            {/* QR Entry Pass — replaces conference status */}
             <div className="glass rounded-2xl p-6 space-y-4">
-              <p className="section-label">Conference Status</p>
-              {[
-                { Icon: Building2, label: "Committee",  value: committee?.name ?? "Not assigned" },
-                { Icon: Globe,     label: "Portfolio",  value: reg.portfolio ?? "Not selected"    },
-                { Icon: Shield,    label: "Role",       value: roleLabel                           },
-                { Icon: CreditCard,label: "Payment",    value:
-                  reg.payment_status === "approved" ? "Verified ✓" :
-                  reg.payment_status === "pending"  ? "Under review" :
-                  reg.payment_status === "rejected" ? "Rejected — re-upload" : "Pending" },
-              ].map(({ Icon, label, value }) => (
-                <div key={label} className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-primary/8 text-primary flex items-center justify-center shrink-0 mt-0.5">
-                    <Icon className="w-4 h-4" />
+              <p className="section-label">Entry Pass</p>
+              {reg.payment_status === "approved" ? (
+                <div className="text-center space-y-3">
+                  <div className="inline-block p-3 bg-white dark:bg-white rounded-xl shadow-card">
+                    <QRCodeCanvas value={`prumun-entry:${reg.id}`} size={150} />
                   </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
-                    <p className="text-sm font-semibold">{value}</p>
-                  </div>
+                  <p className="text-xs font-semibold text-success flex items-center justify-center gap-1">
+                    <CheckCircle2 className="w-4 h-4" /> Show this at the entry gate
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">{committee?.short_name} · {reg.portfolio ?? reg.eb_role ?? "—"}</p>
                 </div>
-              ))}
+              ) : (
+                <div className="flex flex-col items-center gap-3 py-4 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center">
+                    <QrCode className="w-8 h-8 text-muted-foreground/40" />
+                  </div>
+                  <p className="text-sm font-semibold text-muted-foreground">QR available after payment is verified</p>
+                  <p className="text-xs text-muted-foreground">Status: <span className={cn(
+                    "font-bold",
+                    reg.payment_status === "pending" && "text-warning",
+                    reg.payment_status === "rejected" && "text-destructive"
+                  )}>{reg.payment_status === "pending" ? "Under review" : reg.payment_status === "rejected" ? "Rejected" : "Payment pending"}</span></p>
+                </div>
+              )}
+              {/* Conference details */}
+              <div className="pt-3 border-t border-border/50 space-y-2">
+                {[
+                  { Icon: Building2,  label: "Committee", value: committee?.name ?? (isEB ? `${reg.committee_id ?? "Not assigned"}` : "Not assigned") },
+                  { Icon: Globe,      label: isEB ? "Your Role" : "Portfolio", value: (isEB ? reg.eb_role?.replace(/_/g," ") : reg.portfolio) ?? "Not assigned" },
+                  { Icon: Shield,     label: "Role",      value: roleLabel },
+                ].map(({ Icon, label, value }) => (
+                  <div key={label} className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-primary/8 text-primary flex items-center justify-center shrink-0">
+                      <Icon className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide">{label}</p>
+                      <p className="text-xs font-semibold capitalize">{value}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -419,6 +452,19 @@ const Delegate = () => {
         {tab === "chat" && (
           <div className="animate-fade-in">
             <AIAssistant registration={reg} edition={edition!} />
+          </div>
+        )}
+
+        {/* ════════════ EB GRADING TAB ════════════ */}
+        {tab === "grading" && isEB && reg.committee_id && (
+          <div className="animate-fade-in">
+            <EBGradingTab editionId={edition!.id} committeeId={reg.committee_id} />
+          </div>
+        )}
+        {tab === "grading" && isEB && !reg.committee_id && (
+          <div className="glass rounded-3xl p-16 text-center text-muted-foreground animate-fade-in">
+            <Gavel className="w-10 h-10 mx-auto mb-3 opacity-30" />
+            <p>You must be assigned to a committee before grading.</p>
           </div>
         )}
       </div>

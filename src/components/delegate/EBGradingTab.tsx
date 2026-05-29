@@ -1,239 +1,211 @@
-import { useEffect, useState } from "react";
+// EB Grading Tab — grade delegates, speech boxes, leaderboard, persistent via localStorage
+import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { 
-  getRegistrations, type Registration, type Committee, downloadCSV 
-} from "@/lib/munApi";
-import { 
-  Gavel, Plus, Printer, Award, Calculator, Save, 
-  Trash2, ShieldAlert, CheckCircle, TrendingUp 
-} from "lucide-react";
+import { getRegistrations, getCommittees, type Registration, type Committee } from "@/lib/munApi";
+import { Plus, Trash2, Trophy, Medal, Save, ChevronDown, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-type GradeRow = {
-  registrationId: string;
-  delegateName: string;
-  country: string;
-  scores: number[]; // variable length speech scores
+type SpeechEntry = { id: string; label: string; marks: string };
+type DelegateGrades = Record<string, SpeechEntry[]>; // delegateId → entries
+
+const STORAGE_KEY = (editionId: string) => `mun_grades_${editionId}`;
+
+const loadGrades = (editionId: string): DelegateGrades => {
+  try { const s = localStorage.getItem(STORAGE_KEY(editionId)); return s ? JSON.parse(s) : {}; }
+  catch { return {}; }
+};
+const saveGrades = (editionId: string, data: DelegateGrades) => {
+  localStorage.setItem(STORAGE_KEY(editionId), JSON.stringify(data));
 };
 
-export const EBGradingTab = ({ 
-  committee, editionId 
-}: { 
-  committee: Committee; editionId: string;
-}) => {
+export const EBGradingTab = ({ editionId, committeeId }: { editionId: string; committeeId: string }) => {
   const [delegates, setDelegates] = useState<Registration[]>([]);
-  const [grades, setGrades] = useState<GradeRow[]>([]);
-  const [calculatedScoreboard, setCalculatedScoreboard] = useState<any[] | null>(null);
+  const [committee, setCommittee] = useState<Committee | null>(null);
+  const [grades,    setGrades]    = useState<DelegateGrades>({});
+  const [expanded,  setExpanded]  = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    // Fetch all registrations in this committee
-    getRegistrations(editionId).then(regs => {
-      const filtered = regs.filter(r => r.committee_id === committee.id && r.role === "delegate");
-      setDelegates(filtered);
-      
-      // Load or initialize grades
-      const localKey = `mun_eb_grades_${editionId}_${committee.id}`;
-      const saved = localStorage.getItem(localKey);
-      if (saved) {
-        setGrades(JSON.parse(saved));
-      } else {
-        const init = filtered.map(d => ({
-          registrationId: d.id,
-          delegateName: d.full_name,
-          country: d.portfolio || "Unassigned",
-          scores: [0, 0, 0] // 3 default speech boxes
-        }));
-        setGrades(init);
-        localStorage.setItem(localKey, JSON.stringify(init));
-      }
+    Promise.all([getRegistrations(editionId), getCommittees(editionId)]).then(([regs, cmts]) => {
+      const cmte = cmts.find(c => c.id === committeeId) ?? null;
+      setCommittee(cmte);
+      setDelegates(regs.filter(r =>
+        r.role === "delegate" &&
+        r.committee_id === committeeId &&
+        r.payment_status === "approved"
+      ));
     });
-  }, [committee.id, editionId]);
+    setGrades(loadGrades(editionId));
+  }, [editionId, committeeId]);
 
-  const saveGradesLocally = (updated: GradeRow[]) => {
-    setGrades(updated);
-    localStorage.setItem(`mun_eb_grades_${editionId}_${committee.id}`, JSON.stringify(updated));
-    
-    // Sync to global admin live view key
-    localStorage.setItem(`mun_live_eb_grades_sync_${editionId}_${committee.id}`, JSON.stringify({
-      committeeId: committee.id,
-      committeeName: committee.short_name,
-      lastUpdated: new Date().toISOString(),
-      grades: updated
-    }));
-  };
-
-  const handleScoreChange = (regId: string, speechIndex: number, val: number) => {
-    const updated = grades.map(g => {
-      if (g.registrationId === regId) {
-        const copy = [...g.scores];
-        copy[speechIndex] = val;
-        return { ...g, scores: copy };
-      }
-      return g;
+  const updateEntry = (delegateId: string, entryId: string, field: "label" | "marks", val: string) => {
+    setGrades(prev => {
+      const entries = (prev[delegateId] ?? []).map(e => e.id === entryId ? { ...e, [field]: val } : e);
+      const next = { ...prev, [delegateId]: entries };
+      saveGrades(editionId, next);
+      return next;
     });
-    saveGradesLocally(updated);
   };
 
-  const handleAddSpeechBox = (regId: string) => {
-    const updated = grades.map(g => {
-      if (g.registrationId === regId) {
-        return { ...g, scores: [...g.scores, 0] };
-      }
-      return g;
+  const addSpeech = (delegateId: string) => {
+    setGrades(prev => {
+      const entries = [...(prev[delegateId] ?? []), { id: `sp-${Date.now()}`, label: `Speech ${(prev[delegateId]?.length ?? 0) + 1}`, marks: "" }];
+      const next = { ...prev, [delegateId]: entries };
+      saveGrades(editionId, next);
+      return next;
     });
-    saveGradesLocally(updated);
-    toast({ title: "🎤 Speech box added", description: "A new marking cell has been added for this delegate." });
+    setExpanded(p => ({ ...p, [delegateId]: true }));
   };
 
-  const handleCalculateScoreboard = () => {
-    const list = grades.map(g => {
-      const sum = g.scores.reduce((a, b) => a + b, 0);
-      const avg = g.scores.length > 0 ? Number((sum / g.scores.length).toFixed(2)) : 0;
-      return {
-        ...g,
-        total: sum,
-        average: avg
-      };
+  const removeSpeech = (delegateId: string, entryId: string) => {
+    setGrades(prev => {
+      const entries = (prev[delegateId] ?? []).filter(e => e.id !== entryId);
+      const next = { ...prev, [delegateId]: entries };
+      saveGrades(editionId, next);
+      return next;
     });
-    
-    // Sort highest to lowest
-    const sorted = list.sort((a, b) => b.total - a.total);
-    setCalculatedScoreboard(sorted);
-    
-    // Sync completed scoreboard to admin in real-time
-    localStorage.setItem(`mun_live_scoreboard_publish_${editionId}_${committee.id}`, JSON.stringify({
-      committeeId: committee.id,
-      committeeName: committee.short_name,
-      publishedAt: new Date().toISOString(),
-      scoreboard: sorted
-    }));
-    
-    toast({ title: "🏆 Ranked Scoreboard Published!", description: "Results compiled and pushed to administrative portal." });
   };
 
-  const handleExportCSV = () => {
-    if (!calculatedScoreboard) return;
-    const headers = ["Rank", "Delegate Name", "Country/Portfolio", "Speeches Scored", "Individual Scores", "Total Score", "Average Score"];
-    const rows = calculatedScoreboard.map((row, i) => [
-      i + 1,
-      row.delegateName,
-      row.country,
-      row.scores.length,
-      row.scores.join(" | "),
-      row.total,
-      row.average
-    ]);
-    downloadCSV(`${committee.short_name}_Scoreboard_Export.csv`, headers, rows);
-    toast({ title: "📊 Scoreboard exported to Excel CSV!" });
-  };
+  const total = (delegateId: string) =>
+    (grades[delegateId] ?? []).reduce((s, e) => s + (parseFloat(e.marks) || 0), 0);
+
+  const saveAll = () => { saveGrades(editionId, grades); toast({ title: "✅ Grades saved" }); };
+
+  // Build leaderboard
+  const leaderboard = useMemo(() =>
+    delegates
+      .map(d => ({ d, t: total(d.id) }))
+      .sort((a, b) => b.t - a.t),
+    [delegates, grades]
+  );
+
+  if (!committee) return <div className="text-center text-muted-foreground py-12">Loading committee…</div>;
 
   return (
-    <div className="glass-strong rounded-3xl p-6 space-y-6 text-left animate-fade-in">
-      <div className="flex flex-wrap justify-between items-center gap-4 border-b border-border/40 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-            <Gavel className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="font-display text-lg font-bold">EB Grading Vault</h3>
-            <p className="text-xs text-muted-foreground">Committee: <span className="font-semibold text-primary">{committee.name} ({committee.short_name})</span></p>
-          </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="font-display text-xl font-bold">{committee.short_name} — Grading</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {delegates.length} approved delegates · Grades auto-save on every change
+          </p>
         </div>
-
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="rounded-xl" onClick={() => window.print()}>
-            <Printer className="w-4 h-4 mr-1.5" /> Print
-          </Button>
-          <Button variant="hero" size="sm" className="rounded-xl" onClick={handleCalculateScoreboard}>
-            <Calculator className="w-4 h-4 mr-1.5" /> Calculate Scoreboard
-          </Button>
-        </div>
+        <Button variant="hero" size="sm" onClick={saveAll}><Save className="w-4 h-4" /> Save all</Button>
       </div>
 
-      {grades.length === 0 ? (
-        <div className="text-center text-xs text-muted-foreground py-10 border border-dashed rounded-2xl">
-          No delegates registered in this committee yet to grade.
-        </div>
-      ) : (
-        <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-1">
-          {grades.map(g => (
-            <div key={g.registrationId} className="glass rounded-2xl p-4 border border-border/40 hover:border-primary/20 flex flex-wrap items-center justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <h4 className="font-bold truncate text-sm">{g.delegateName}</h4>
-                <p className="text-xs text-primary font-semibold">{g.country}</p>
-              </div>
-
-              {/* Dynamic Speeches inputs */}
-              <div className="flex flex-wrap items-center gap-2">
-                {g.scores.map((score, sIdx) => (
-                  <div key={sIdx} className="space-y-1">
-                    <span className="text-[9px] font-bold text-muted-foreground block text-center">SP {sIdx + 1}</span>
-                    <Input 
-                      type="number" 
-                      min={0} 
-                      max={10} 
-                      value={score} 
-                      onChange={e => handleScoreChange(g.registrationId, sIdx, Number(e.target.value) || 0)} 
-                      className="w-12 h-9 text-center p-1 rounded-lg text-xs"
-                    />
-                  </div>
-                ))}
-                
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={() => handleAddSpeechBox(g.registrationId)}
-                  className="h-9 px-2.5 rounded-lg border-dashed mt-4 text-xs font-bold"
-                >
-                  <Plus className="w-3.5 h-3.5 mr-1" /> Speech
-                </Button>
-              </div>
-            </div>
-          ))}
+      {delegates.length === 0 && (
+        <div className="glass rounded-3xl p-16 text-center text-muted-foreground">
+          <Trophy className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p>No approved delegates in this committee yet.</p>
         </div>
       )}
 
-      {/* Calculated Ranked Scoreboard Section */}
-      {calculatedScoreboard && (
-        <div className="border-t border-border/40 pt-6 mt-6 space-y-4 animate-fade-in">
-          <div className="flex justify-between items-center">
-            <h4 className="font-display font-bold text-base flex items-center gap-1.5 text-success">
-              <Award className="w-5 h-5" /> Ranked Committee Scoreboard
-            </h4>
-            <Button variant="outline" size="sm" onClick={handleExportCSV} className="text-xs rounded-xl">
-              Export Excel CSV
-            </Button>
-          </div>
+      {/* Per-delegate grading cards */}
+      <div className="space-y-3">
+        {delegates.map(d => {
+          const entries = grades[d.id] ?? [];
+          const t       = total(d.id);
+          const isOpen  = expanded[d.id] ?? entries.length > 0;
+          return (
+            <div key={d.id} className="glass-strong rounded-2xl overflow-hidden">
+              {/* Header row */}
+              <button
+                type="button"
+                onClick={() => setExpanded(p => ({ ...p, [d.id]: !isOpen }))}
+                className="w-full flex items-center gap-3 px-5 py-4 hover:bg-secondary/30 transition-colors text-left"
+              >
+                {isOpen ? <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" />
+                        : <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />}
+                <div className="flex-1 min-w-0">
+                  <span className="font-bold text-sm">{d.full_name}</span>
+                  <span className="text-xs text-muted-foreground ml-2">{d.portfolio ?? "—"}</span>
+                </div>
+                <span className="text-sm font-bold text-primary mr-2">Total: {t}</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0"
+                  onClick={e => { e.stopPropagation(); addSpeech(d.id); }}
+                >
+                  <Plus className="w-3 h-3" /> Add Speech
+                </Button>
+              </button>
 
-          <div className="glass rounded-2xl overflow-hidden border border-border/50">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-secondary/40 text-muted-foreground uppercase font-bold text-[9px] tracking-wider border-b border-border/40">
-                <tr>
-                  <th className="p-3 text-center w-12">Rank</th>
-                  <th className="p-3">Delegate</th>
-                  <th className="p-3">Portfolio</th>
-                  <th className="p-3 text-center">Speeches</th>
-                  <th className="p-3 text-center">Scores Matrix</th>
-                  <th className="p-3 text-center w-20">Total</th>
-                  <th className="p-3 text-center w-20">Average</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/40">
-                {calculatedScoreboard.map((row, idx) => (
-                  <tr key={row.registrationId} className="hover:bg-secondary/25 transition-colors">
-                    <td className="p-3 text-center font-bold text-primary">{idx + 1}</td>
-                    <td className="p-3 font-semibold text-foreground">{row.delegateName}</td>
-                    <td className="p-3 text-primary-deep font-medium">{row.country}</td>
-                    <td className="p-3 text-center">{row.scores.length}</td>
-                    <td className="p-3 text-center font-mono text-muted-foreground">{row.scores.join(" , ")}</td>
-                    <td className="p-3 text-center font-bold text-foreground">{row.total}</td>
-                    <td className="p-3 text-center font-bold text-success">{row.average}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              {/* Entries */}
+              {isOpen && (
+                <div className="px-5 pb-4 space-y-2 border-t border-border/40 pt-3">
+                  {entries.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">
+                      No speeches yet. Click "Add Speech" to start grading.
+                    </p>
+                  ) : (
+                    entries.map(e => (
+                      <div key={e.id} className="flex items-center gap-2">
+                        <Input
+                          value={e.label}
+                          onChange={ev => updateEntry(d.id, e.id, "label", ev.target.value)}
+                          className="flex-1 h-9 text-sm"
+                          placeholder="Label e.g. Opening speech"
+                        />
+                        <Input
+                          type="number"
+                          min={0}
+                          value={e.marks}
+                          onChange={ev => updateEntry(d.id, e.id, "marks", ev.target.value)}
+                          className="w-24 h-9 text-sm text-center"
+                          placeholder="Marks"
+                        />
+                        <button onClick={() => removeSpeech(d.id, e.id)}
+                          className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-colors">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                  {entries.length > 0 && (
+                    <div className="flex justify-end pt-1">
+                      <span className="text-xs font-bold px-3 py-1 rounded-full bg-primary/10 text-primary">
+                        Total: {t}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Leaderboard */}
+      {leaderboard.some(x => x.t > 0) && (
+        <div className="glass-strong rounded-3xl p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-warning" />
+            <h3 className="font-display font-bold text-lg">Live Leaderboard</h3>
+          </div>
+          <div className="space-y-2">
+            {leaderboard.map(({ d, t }, i) => (
+              <div key={d.id} className={cn(
+                "flex items-center gap-3 rounded-xl px-4 py-2.5 transition-colors",
+                i === 0 ? "bg-warning/10 border border-warning/20" :
+                i === 1 ? "bg-secondary/50" :
+                i === 2 ? "bg-secondary/30" : ""
+              )}>
+                <div className="w-7 flex justify-center shrink-0">
+                  {i === 0 ? <Trophy className="w-5 h-5 text-warning" />
+                   : i === 1 ? <Medal className="w-4 h-4 text-slate-400" />
+                   : i === 2 ? <Medal className="w-4 h-4 text-amber-600" />
+                   : <span className="text-xs text-muted-foreground font-bold">{i + 1}</span>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate">{d.full_name}</p>
+                  <p className="text-xs text-muted-foreground">{d.portfolio ?? "—"}</p>
+                </div>
+                <span className={cn("font-bold text-sm", i === 0 && "text-warning")}>{t}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}

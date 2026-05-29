@@ -29,6 +29,7 @@ import { EditionsTab }           from "@/components/secretariat/EditionsTab";
 import { MembersTab }            from "@/components/secretariat/MembersTab";
 import { AIChatLogsTab }         from "@/components/secretariat/AIChatLogsTab";
 import { PaymentsTab }           from "@/components/secretariat/PaymentsTab";
+import { GradesTab }             from "@/components/secretariat/GradesTab";
 import { PendingApprovalBanner } from "@/components/secretariat/PendingApprovalBanner";
 import type { TabKey } from "@/lib/munApi";
 import { cn, initials } from "@/lib/utils";
@@ -39,6 +40,7 @@ const ALL_TABS: { id: TabKey; label: string; icon: any; group: string }[] = [
   { id: "oc",          label: "OC",                icon: HardHat,       group: "People"    },
   { id: "attendance",  label: "Attendance",        icon: ClipboardCheck,group: "People"    },
   { id: "payments",    label: "Payments",          icon: CreditCard,    group: "People"    },
+  { id: "grades",      label: "Grades",            icon: LayoutDashboard,group: "People"   },
   { id: "announcements",label:"Announcements",     icon: Megaphone,     group: "Content"   },
   { id: "schedule",    label: "Schedule",          icon: CalendarDays,  group: "Content"   },
   { id: "brochure",    label: "Brochure",          icon: FileText,      group: "Content"   },
@@ -96,6 +98,7 @@ const Secretariat = () => {
       case "oc":           return <OrganisingCommitteeTab editionId={edition.id} />;
       case "attendance":   return <AttendanceTab editionId={edition.id} />;
       case "payments":     return <PaymentsTab edition={edition} onSaved={refreshEdition} />;
+      case "grades":       return <GradesTab editionId={edition.id} />;
       case "announcements":return <AnnouncementsTab editionId={edition.id} />;
       case "schedule":     return <ScheduleTab editionId={edition.id} />;
       case "brochure":     return <BrochureTab editionId={edition.id} />;
