@@ -89,7 +89,9 @@ export const EditsTab = ({ edition, onSaved }: { edition: Edition; onSaved: () =
   const init = (e: Edition) => ({
     /* identity */
     name:                   e.name                   ?? "",
-    hero_tagline:           e.hero_tagline            ?? "REGISTRATIONS OPEN",
+    hero_tagline:           (e as any).hero_tagline   ?? "",
+    hero_subtitle_accent:   (e as any).hero_subtitle_accent ?? "Diplomacy · Debate · Destiny",
+    hero_subtitle:          (e as any).hero_subtitle  ?? "The premier Model United Nations conference at Prudence School, Dwarka — where the next generation of global leaders finds its voice.",
     /* hero / dates */
     countdown_title:        e.countdown_title         ?? "Conference Begins In",
     countdown_subtitle:     e.countdown_subtitle      ?? "",
@@ -417,18 +419,15 @@ export const EditsTab = ({ edition, onSaved }: { edition: Edition; onSaved: () =
                 desc="Conference name, logo assets, and hero tagline shown on every page." />
 
               <div className="grid md:grid-cols-3 gap-4">
-                <ImageUploader label="Site / Hero Logo" hint="Shown on homepage crest and loading screen"
+                <ImageUploader label="Site / Hero Logo" hint="Shown on homepage crest"
                   preview={logoPreview} fallback={crest}
                   busy={logoBusy} fileRef={logoRef} onUpload={f => uploadLogo(f, "site")} />
-                <ImageUploader label="Navbar Header Logo" hint="Small logo shown in the top navigation bar"
-                  preview={hdrPreview} fallback={logoPreview ?? crest}
-                  busy={hdrBusy} fileRef={hdrRef} onUpload={f => uploadLogo(f, "header")} />
-                <div className="space-y-4">
+                <div className="md:col-span-2 space-y-4">
                   <Field label="Conference name" hint="Full edition name e.g. PRUMUN 2026">
                     <Input {...F("name")} placeholder="PRUMUN 2026" />
                   </Field>
-                  <Field label="Hero eyebrow tagline" hint="Small uppercase pill on the homepage hero">
-                    <Input {...F("hero_tagline")} placeholder="REGISTRATIONS OPEN" />
+                  <Field label="Hero eyebrow pill" hint="Leave empty to hide. Optional small pill shown on hero.">
+                    <Input {...F("hero_tagline")} placeholder="Leave blank to hide" />
                   </Field>
                 </div>
               </div>
@@ -445,7 +444,7 @@ export const EditsTab = ({ edition, onSaved }: { edition: Edition; onSaved: () =
                 <Field label="Countdown title" hint="Text above the countdown units">
                   <Input {...F("countdown_title")} placeholder="Conference Begins In" />
                 </Field>
-                <Field label="Countdown subtitle" hint="Optional smaller text below (can be left empty)">
+                <Field label="Countdown subtitle" hint="Optional smaller text below (leave empty to hide)">
                   <Input {...F("countdown_subtitle")} placeholder="Seats are filling fast…" />
                 </Field>
                 <Field label="Event start date & time">
@@ -453,6 +452,12 @@ export const EditsTab = ({ edition, onSaved }: { edition: Edition; onSaved: () =
                 </Field>
                 <Field label="Event end date & time" hint="Optional — leave blank for single-day events">
                   <Input type="datetime-local" {...F("event_end_date")} />
+                </Field>
+                <Field label="Hero italic tagline" hint='Shown below the title. E.g. "Diplomacy · Debate · Destiny"' className="md:col-span-2">
+                  <Input {...F("hero_subtitle_accent")} placeholder="Diplomacy · Debate · Destiny" />
+                </Field>
+                <Field label="Hero subtitle paragraph" hint="Full description shown below the italic line." className="md:col-span-2">
+                  <Textarea {...F("hero_subtitle")} rows={3} placeholder="The premier Model United Nations conference…" />
                 </Field>
               </div>
             </div>

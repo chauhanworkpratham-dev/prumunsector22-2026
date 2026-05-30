@@ -87,49 +87,30 @@ export const Navbar = () => {
 
   return (
     <>
-      <header className={cn(
-        "fixed top-0 inset-x-0 z-50 transition-all duration-300",
-        scrolled || menuOpen
-          ? "glass-nav py-2"
-          : "bg-transparent py-4"
-      )}>
+      <header className="fixed top-0 inset-x-0 z-50 transition-all duration-200 bg-[#03082e]/95 backdrop-blur-2xl border-b border-white/10 shadow-[0_2px_24px_rgba(3,8,46,0.55)] py-3">
         <div className="container flex items-center justify-between gap-4">
 
-          {/* Brand wordmark — no image, gradient text */}
-          <Link to="/" className="flex items-center gap-2 shrink-0 group">
+          {/* Brand — always white on dark navbar */}
+          <Link to="/" className="flex items-center gap-3 shrink-0 group">
             <div className="flex flex-col leading-none">
-              <span className={cn(
-                "font-display font-black text-[22px] tracking-tight transition-all",
-                scrolled ? "gradient-text" : "text-white drop-shadow-sm"
-              )}>
+              <span className="font-display font-black text-[20px] tracking-tight text-white drop-shadow-sm leading-none">
                 {brand}
               </span>
-              <span className={cn(
-                "text-[7.5px] tracking-[0.3em] font-bold uppercase transition-all",
-                scrolled ? "text-primary/60" : "text-white/60"
-              )}>
-                Model UN
+              <span className="text-[8px] tracking-[0.22em] font-bold uppercase text-white/55 mt-0.5 whitespace-nowrap">
+                Prudence Model United Nations
               </span>
             </div>
           </Link>
 
-          {/* Desktop pill nav */}
-          <nav className="hidden lg:flex items-center gap-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-2 py-1.5">
+          {/* Desktop pill nav — always white on dark */}
+          <nav className="hidden lg:flex items-center gap-0.5 bg-white/8 backdrop-blur-md border border-white/15 rounded-full px-2 py-1.5">
             {NAV.map(l => (
               <NavLink
                 key={l.to}
                 to={l.to}
                 end={"end" in l ? (l as any).end : undefined}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-full text-sm font-semibold transition-all duration-200",
-                  scrolled
-                    ? "text-foreground/70 hover:text-foreground hover:bg-secondary"
-                    : "text-white/80 hover:text-white hover:bg-white/15"
-                )}
-                activeClassName={cn(
-                  "font-bold",
-                  scrolled ? "text-primary bg-primary/8" : "text-white bg-white/20"
-                )}
+                className="px-3.5 py-1.5 rounded-full text-sm font-medium text-white/70 hover:text-white hover:bg-white/15 transition-all duration-200"
+                activeClassName="text-white bg-white/20 font-semibold"
               >
                 {l.label}
               </NavLink>
@@ -142,20 +123,15 @@ export const Navbar = () => {
               <div ref={profileRef} className="relative">
                 <button
                   onClick={() => setProfileOpen(v => !v)}
-                  className={cn(
-                    "flex items-center gap-2 rounded-full pr-3 pl-1 py-1 border transition-all",
-                    scrolled
-                      ? "border-border/60 bg-white hover:border-primary/40 hover:bg-primary/4 shadow-sm"
-                      : "border-white/25 bg-white/15 hover:bg-white/25 text-white"
-                  )}
+                  className="flex items-center gap-2 rounded-full pr-3 pl-1 py-1 border border-white/20 bg-white/10 hover:bg-white/20 transition-all"
                 >
                   <div className="w-7 h-7 rounded-full overflow-hidden bg-gradient-primary flex items-center justify-center text-xs font-bold text-white shrink-0">
                     {avatarUrl ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" /> : avatarLetters}
                   </div>
-                  <span className={cn("text-sm font-semibold max-w-[120px] truncate", !scrolled && "text-white")}>
+                  <span className="text-sm font-semibold max-w-[120px] truncate text-white">
                     {displayName}
                   </span>
-                  <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", profileOpen && "rotate-180", !scrolled ? "text-white/70" : "text-muted-foreground")} />
+                  <ChevronDown className={cn("w-3.5 h-3.5 text-white/60 transition-transform", profileOpen && "rotate-180")} />
                 </button>
 
                 {profileOpen && (
@@ -189,11 +165,11 @@ export const Navbar = () => {
             ) : (
               <div className="flex items-center gap-2">
                 <Link to="/login"
-                  className={cn("px-4 py-2 rounded-full text-sm font-semibold transition-all",
-                    scrolled ? "text-foreground/70 hover:text-foreground hover:bg-secondary" : "text-white/80 hover:text-white hover:bg-white/15"
-                  )}>Login</Link>
+                  className="px-4 py-2 rounded-full text-sm font-semibold text-white/75 hover:text-white hover:bg-white/15 transition-all">
+                  Login
+                </Link>
                 <Link to="/register"
-                  className="px-5 py-2 rounded-full text-sm font-bold bg-white text-primary shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200">
+                  className="px-5 py-2 rounded-full text-sm font-bold bg-white text-[#03082e] shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200">
                   Register
                 </Link>
               </div>
@@ -209,7 +185,7 @@ export const Navbar = () => {
             )}
             <button
               onClick={() => setMenuOpen(v => !v)}
-              className={cn("p-2 rounded-full transition-all", scrolled ? "hover:bg-secondary" : "hover:bg-white/15 text-white")}
+              className="p-2 rounded-full text-white hover:bg-white/15 transition-all"
               aria-label="Toggle menu" aria-expanded={menuOpen}
             >
               {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

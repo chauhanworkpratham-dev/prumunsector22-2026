@@ -71,12 +71,12 @@ const Index = () => {
             <img src={edition?.logo_url ?? crest} alt={brand} width={72} height={72} className="w-16 h-16 object-contain drop-shadow-2xl" />
           </div>
 
-          {/* Eyebrow pill */}
-          {((edition as any)?.hero_tagline ?? "Registrations Open").trim() && (
+          {/* Eyebrow pill — only if hero_tagline is set in CMS */}
+          {(edition as any)?.hero_tagline && (
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full px-4 py-1.5 mb-6 animate-fade-in">
               <span className="w-1.5 h-1.5 rounded-full bg-[#60a5fa] animate-pulse" />
               <span className="text-[11px] font-semibold tracking-[0.22em] text-white/90 uppercase">
-                {(edition as any)?.hero_tagline ?? "Registrations Open"}
+                {(edition as any).hero_tagline}
               </span>
             </div>
           )}
@@ -90,12 +90,11 @@ const Index = () => {
           </h1>
 
           <p className="font-display text-xl sm:text-2xl text-white/50 italic mb-3 animate-slide-up" style={{ animationDelay: "80ms" }}>
-            Diplomacy · Debate · Destiny
+            {(edition as any)?.hero_subtitle_accent ?? "Diplomacy · Debate · Destiny"}
           </p>
 
           <p className="text-sm text-white/60 max-w-xl mx-auto mb-12 leading-relaxed animate-slide-up" style={{ animationDelay: "140ms" }}>
-            The premier Model United Nations conference at Prudence School, Dwarka —
-            where the next generation of global leaders finds its voice.
+            {(edition as any)?.hero_subtitle ?? "The premier Model United Nations conference at Prudence School, Dwarka — where the next generation of global leaders finds its voice."}
           </p>
 
           {/* Countdown */}
@@ -115,11 +114,31 @@ const Index = () => {
             </Button>
           </div>
 
-          {/* Meta strip */}
-          <div className="flex flex-wrap items-center justify-center gap-5 mt-10 text-xs text-white/45 animate-fade-in" style={{ animationDelay: "340ms" }}>
-            <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-[#60a5fa]" /> {dateLabel}</span>
+          {/* Interactive date + venue strip */}
+          <div className="flex flex-wrap items-center justify-center gap-4 mt-10 text-xs text-white/50 animate-fade-in" style={{ animationDelay: "340ms" }}>
+            {/* Calendar link */}
+            <a
+              href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(edition?.name ?? "PRUMUN Conference")}&dates=${eventDate.toISOString().replace(/[-:]/g,"").slice(0,8)}T090000Z/${eventDate.toISOString().replace(/[-:]/g,"").slice(0,8)}T180000Z&location=${encodeURIComponent(edition?.venue_address ?? "Prudence School, Dwarka, New Delhi")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 hover:text-[#93c5fd] transition-colors group"
+              title="Add to Google Calendar"
+            >
+              <Calendar className="w-3.5 h-3.5 text-[#60a5fa] group-hover:scale-110 transition-transform" />
+              <span className="group-hover:underline underline-offset-2">{dateLabel}</span>
+            </a>
             <span className="w-px h-3 bg-white/20 hidden sm:block" />
-            <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-[#60a5fa]" /> {edition?.venue_name ?? "Prudence School, Dwarka"}</span>
+            {/* Google Maps link */}
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(edition?.venue_address ?? "Prudence School Dwarka New Delhi")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 hover:text-[#93c5fd] transition-colors group"
+              title="Open in Google Maps"
+            >
+              <MapPin className="w-3.5 h-3.5 text-[#60a5fa] group-hover:scale-110 transition-transform" />
+              <span className="group-hover:underline underline-offset-2">{edition?.venue_name ?? "Prudence School, Dwarka"}</span>
+            </a>
           </div>
         </div>
       </section>
@@ -127,20 +146,6 @@ const Index = () => {
       {/* ══════════════════════════════════════════════
           STATS
       ══════════════════════════════════════════════ */}
-      <section className="py-20 border-b border-border/50 bg-background">
-        <div className="container grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {STATS.map(({ Icon, value, label }, i) => (
-            <div key={label} className="glass rounded-2xl p-6 text-center hover-lift animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
-              <div className="w-11 h-11 mx-auto rounded-xl bg-primary/8 text-primary flex items-center justify-center mb-3">
-                <Icon className="w-5 h-5" />
-              </div>
-              <div className="font-display text-3xl font-bold gradient-text-deep">{value}</div>
-              <div className="text-xs text-muted-foreground mt-1 tracking-wide">{label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* ══════════════════════════════════════════════
           ANNOUNCEMENTS
       ══════════════════════════════════════════════ */}

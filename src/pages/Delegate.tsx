@@ -119,7 +119,8 @@ const Delegate = () => {
   }, [lockedByTimer, reg?.id]);
 
   const committee = committees.find(c => c.id === reg?.committee_id);
-  const roleLabel = isEB ? "Executive Board" : isOC ? "Organising Committee" : "Delegate";
+  const roleLabel = isEB ? "Executive Board Member" : isOC ? "Organising Committee Member" : "Delegate";
+  const roleBadgeColor = isEB ? "bg-purple-100 text-purple-700" : isOC ? "bg-amber-100 text-amber-700" : "bg-primary/10 text-primary";
 
   const handleLogout = () => { logoutDelegate(); navigate("/"); };
 
@@ -210,12 +211,11 @@ const Delegate = () => {
           <div className="flex-1 min-w-0">
             <h1 className="font-display text-2xl md:text-3xl font-bold mb-0.5">{reg.full_name}</h1>
             <div className="flex flex-wrap gap-2 mt-2">
-              <span className="pill bg-primary/10 text-primary text-[10px]">{roleLabel}</span>
+              <span className={cn("pill text-[10px]", roleBadgeColor)}>{roleLabel}</span>
               {committee && <span className="pill bg-secondary text-foreground text-[10px]">{committee.short_name}</span>}
-              {reg.portfolio && <span className="pill bg-secondary text-foreground text-[10px]">{reg.portfolio}</span>}
               <span className={cn("pill text-[10px]",
-                reg.payment_status === "approved"  ? "bg-success/10 text-success"     :
-                reg.payment_status === "pending"   ? "bg-warning/10 text-warning"     :
+                reg.payment_status === "approved"  ? "bg-success/10 text-success"         :
+                reg.payment_status === "pending"   ? "bg-warning/10 text-warning"         :
                 reg.payment_status === "rejected"  ? "bg-destructive/10 text-destructive" :
                 "bg-muted text-muted-foreground")}>
                 {reg.payment_status === "approved" ? "✓ Verified" :
@@ -267,16 +267,16 @@ const Delegate = () => {
               </div>
             </div>
 
-            {/* QR Entry Pass — replaces conference status */}
+            {/* QR Entry Pass */}
             <div className="glass rounded-2xl p-6 space-y-4">
               <p className="section-label">Entry Pass</p>
               {reg.payment_status === "approved" ? (
                 <div className="text-center space-y-3">
-                  <div className="inline-block p-3 bg-white dark:bg-white rounded-xl shadow-card">
+                  <div className="inline-block p-3 bg-white rounded-xl shadow-card">
                     <QRCodeCanvas value={`prumun-entry:${reg.id}`} size={150} />
                   </div>
                   <p className="text-xs font-semibold text-success flex items-center justify-center gap-1">
-                    <CheckCircle2 className="w-4 h-4" /> Show this at the entry gate
+                    <CheckCircle2 className="w-4 h-4" /> Show this QR at the entry gate
                   </p>
                   <p className="text-[11px] text-muted-foreground">{committee?.short_name} · {reg.portfolio ?? reg.eb_role ?? "—"}</p>
                 </div>
@@ -285,32 +285,47 @@ const Delegate = () => {
                   <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center">
                     <QrCode className="w-8 h-8 text-muted-foreground/40" />
                   </div>
-                  <p className="text-sm font-semibold text-muted-foreground">QR available after payment is verified</p>
-                  <p className="text-xs text-muted-foreground">Status: <span className={cn(
-                    "font-bold",
-                    reg.payment_status === "pending" && "text-warning",
+                  <p className="text-sm font-semibold text-muted-foreground">QR unlocks after payment verification</p>
+                  <p className="text-xs text-muted-foreground">Current status: <span className={cn("font-bold",
+                    reg.payment_status === "pending"  && "text-warning",
                     reg.payment_status === "rejected" && "text-destructive"
-                  )}>{reg.payment_status === "pending" ? "Under review" : reg.payment_status === "rejected" ? "Rejected" : "Payment pending"}</span></p>
+                  )}>{reg.payment_status === "pending" ? "Under review" : reg.payment_status === "rejected" ? "Rejected — re-upload" : "Awaiting payment"}</span></p>
+                  {/* Pay button shown here below entry pass, only if unpaid */}
+                  {(reg.payment_status === "none" || reg.payment_status === "rejected") && reg.portfolio && (
+                    <Button className="w-full bg-gradient-primary text-white border-0 font-semibold mt-2" onClick={() => { setPayOpen(true); setPayStep(1); }}>
+                      <CreditCard className="w-4 h-4" /> {reg.payment_status === "rejected" ? "Re-upload Receipt" : "Complete Payment"}
+                    </Button>
+                  )}
                 </div>
               )}
-              {/* Conference details */}
-              <div className="pt-3 border-t border-border/50 space-y-2">
-                {[
-                  { Icon: Building2,  label: "Committee", value: committee?.name ?? (isEB ? `${reg.committee_id ?? "Not assigned"}` : "Not assigned") },
-                  { Icon: Globe,      label: isEB ? "Your Role" : "Portfolio", value: (isEB ? reg.eb_role?.replace(/_/g," ") : reg.portfolio) ?? "Not assigned" },
-                  { Icon: Shield,     label: "Role",      value: roleLabel },
-                ].map(({ Icon, label, value }) => (
-                  <div key={label} className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-lg bg-primary/8 text-primary flex items-center justify-center shrink-0">
-                      <Icon className="w-3.5 h-3.5" />
+
+              {/* 1-min change window or infinite if both prefs reserved */}
+              {isDelegate && reg.payment_status !== "approved" && (
+                <div className="pt-3 border-t border-border/50">
+                  {reg.needs_reselection ? (
+                    <Button variant="outline" size="sm" className="w-full font-semibold border-primary/30 text-primary"
+                      onClick={() => { setSwapOpen(true); setSwapCommittee(""); setSwapPortfolio(""); }}>
+                      <RefreshCw className="w-3.5 h-3.5" /> Change Portfolio (Both prefs reserved)
+                    </Button>
+                  ) : !lockedByServer && !lockedByTimer ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Change window</span>
+                        <span className="font-bold text-warning flex items-center gap-1">
+                          <Timer className="w-3 h-3" />
+                          {Math.floor((COOLDOWN - elapsed) / 1000 / 60)}:{String(Math.floor(((COOLDOWN - elapsed) / 1000) % 60)).padStart(2, "0")} remaining
+                        </span>
+                      </div>
+                      <Button variant="outline" size="sm" className="w-full font-semibold border-primary/30 text-primary"
+                        onClick={() => { setSwapOpen(true); setSwapCommittee(""); setSwapPortfolio(""); }}>
+                        <RefreshCw className="w-3.5 h-3.5" /> Change Portfolio
+                      </Button>
                     </div>
-                    <div>
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide">{label}</p>
-                      <p className="text-xs font-semibold capitalize">{value}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground text-center">Portfolio change window closed</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -318,81 +333,89 @@ const Delegate = () => {
         {/* ════════════ PORTFOLIO TAB ════════════ */}
         {tab === "portfolio" && (
           <div className="space-y-5 animate-fade-in">
-            {/* QR ticket */}
-            {reg.payment_status === "approved" && reg.portfolio ? (
-              <div className="glass-strong rounded-2xl p-8 text-center space-y-4 animate-glow-pulse">
-                <p className="section-label">Entry Ticket</p>
-                <div className="inline-block p-4 bg-white rounded-2xl shadow-card">
-                  <QRCodeCanvas value={`prumun-entry:${reg.id}`} size={180} />
+            {/* Committee / role info card */}
+            <div className="glass-strong rounded-2xl p-6 space-y-4">
+              <p className="section-label">{isEB ? "Your Role" : isOC ? "Your Assignment" : "Your Portfolio"}</p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: "Committee",   value: committee?.name ?? "Not assigned",                                   icon: Building2 },
+                  { label: "Short name",  value: committee?.short_name ?? "—",                                        icon: Globe     },
+                  { label: isEB ? "Role" : "Portfolio", value: (isEB ? reg.eb_role?.replace(/_/g," ") : reg.portfolio) ?? "Not selected", icon: Shield },
+                  { label: "Your role",   value: roleLabel,                                                            icon: User      },
+                ].map(({ label, value, icon: Icon }) => (
+                  <div key={label} className="glass rounded-xl p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icon className="w-3.5 h-3.5 text-primary" />
+                      <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-bold">{label}</p>
+                    </div>
+                    <p className="text-sm font-semibold capitalize">{value}</p>
+                  </div>
+                ))}
+              </div>
+              {committee?.agenda && (
+                <div className="glass rounded-xl p-3">
+                  <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-bold mb-1">Agenda</p>
+                  <p className="text-sm text-foreground/80 leading-relaxed">{committee.agenda}</p>
                 </div>
-                <div>
-                  <p className="font-display text-xl font-bold">{reg.full_name}</p>
-                  <p className="text-sm text-muted-foreground">{committee?.short_name} · {reg.portfolio}</p>
-                </div>
-                <div className="flex items-center justify-center gap-1.5 text-success text-sm font-semibold">
-                  <CheckCircle2 className="w-4 h-4" /> Payment verified — show at entry gate
+              )}
+              {/* If no portfolio selected yet */}
+              {!reg.portfolio && isDelegate && (
+                <Button className="w-full bg-gradient-primary text-white border-0 font-semibold" onClick={() => setSwapOpen(true)}>
+                  Select Portfolio
+                </Button>
+              )}
+            </div>
+
+            {/* Payment timer */}
+            {reg.portfolio && reg.payment_status === "none" && payTimerRemaining > 0 && (
+              <div className="flex items-center gap-2 text-sm text-warning bg-warning/10 border border-warning/20 rounded-2xl px-4 py-3">
+                <Clock className="w-4 h-4 shrink-0" />
+                Portfolio reserved for <span className="font-bold ml-1">{Math.floor(payTimerRemaining / 60)}:{String(payTimerRemaining % 60).padStart(2, "0")}</span>
+              </div>
+            )}
+
+            {/* Payment status */}
+            {reg.portfolio && reg.payment_status === "pending" && (
+              <div className="flex items-center gap-3 glass rounded-2xl px-4 py-3 text-warning">
+                <Hourglass className="w-4 h-4 shrink-0" />
+                <p className="text-sm font-semibold">Receipt uploaded — awaiting Secretariat review</p>
+              </div>
+            )}
+            {reg.portfolio && reg.payment_status === "rejected" && (
+              <div className="glass rounded-2xl px-4 py-3 space-y-3">
+                <div className="flex items-center gap-3 text-destructive">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <p className="text-sm font-semibold">Payment rejected — {reg.payment_rejection_reason ?? "re-upload required"}</p>
                 </div>
               </div>
-            ) : (
-              <div className="glass rounded-2xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="font-display font-bold text-lg">
-                      {reg.portfolio ? `${committee?.short_name ?? "Committee"} · ${reg.portfolio}` : "No portfolio selected"}
-                    </h3>
-                    {reg.portfolio && committee && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{committee.name}</p>
-                    )}
-                  </div>
-                  {/* Change portfolio button */}
-                  {reg.portfolio && !lockedByServer && !lockedByTimer && isDelegate && (
-                    <Button variant="outline" size="sm" onClick={() => { setSwapOpen(true); setSwapCommittee(""); setSwapPortfolio(""); }}
-                      className="font-semibold border-primary/30 text-primary hover:bg-primary hover:text-white">
-                      Change
-                    </Button>
-                  )}
-                </div>
+            )}
+            {reg.payment_status === "approved" && (
+              <div className="flex items-center gap-3 glass rounded-2xl px-4 py-3 text-success">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <p className="text-sm font-semibold">Payment verified ✓</p>
+              </div>
+            )}
 
-                {/* Payment status / action */}
-                {reg.portfolio ? (
-                  <div className="space-y-3">
-                    {reg.payment_status === "none" && (
-                      <>
-                        {payTimerRemaining > 0 && (
-                          <div className="flex items-center gap-2 text-xs text-warning bg-warning/10 rounded-xl px-3 py-2">
-                            <Clock className="w-3.5 h-3.5 shrink-0" />
-                            Portfolio reserved for {Math.floor(payTimerRemaining / 60)}:{String(payTimerRemaining % 60).padStart(2, "0")}
-                          </div>
-                        )}
-                        <Button className="w-full bg-gradient-primary text-white border-0 font-semibold hover:opacity-90"
-                          onClick={() => { setPayOpen(true); setPayStep(1); }}>
-                          <CreditCard className="w-4 h-4" /> Complete Payment
-                        </Button>
-                      </>
-                    )}
-                    {reg.payment_status === "pending" && (
-                      <div className="flex items-center gap-2 text-sm text-warning bg-warning/10 rounded-xl px-3 py-2.5">
-                        <Hourglass className="w-4 h-4 shrink-0" /> Receipt uploaded — awaiting Secretariat review
-                      </div>
-                    )}
-                    {reg.payment_status === "rejected" && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-xl px-3 py-2.5">
-                          <AlertTriangle className="w-4 h-4 shrink-0" /> Payment rejected — {reg.payment_rejection_reason ?? "re-upload required"}
-                        </div>
-                        <Button className="w-full bg-gradient-primary text-white border-0 font-semibold hover:opacity-90"
-                          onClick={() => { setPayOpen(true); setPayStep(1); }}>
-                          <Upload className="w-4 h-4" /> Re-upload Receipt
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <Button className="w-full bg-gradient-primary text-white border-0 font-semibold hover:opacity-90"
-                    onClick={() => setSwapOpen(true)}>
-                    Select Portfolio
-                  </Button>
-                )}
+            {/* Preferences info */}
+            {isDelegate && (reg.pref1_committee_id || reg.pref2_committee_id) && (
+              <div className="glass rounded-2xl p-4 space-y-2">
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Your Preferences</p>
+                {[
+                  { n: 1, cId: reg.pref1_committee_id, portfolio: reg.pref1_portfolio },
+                  { n: 2, cId: reg.pref2_committee_id, portfolio: reg.pref2_portfolio },
+                ].map(({ n, cId, portfolio }) => {
+                  const c = committees.find(x => x.id === cId);
+                  const chosen = reg.committee_id === cId && reg.portfolio === portfolio;
+                  return (
+                    <div key={n} className={cn("flex items-center gap-3 rounded-xl px-3 py-2 text-xs",
+                      chosen ? "bg-success/10 border border-success/20" : "bg-secondary/30")}>
+                      <span className={cn("font-bold", chosen && "text-success")}>P{n}</span>
+                      <span className="font-semibold">{c?.short_name ?? "—"}</span>
+                      <span className="text-muted-foreground">{portfolio ?? "—"}</span>
+                      {chosen && <span className="ml-auto text-success font-bold">✓ Assigned</span>}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

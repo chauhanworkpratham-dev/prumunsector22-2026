@@ -82,7 +82,9 @@ const Secretariat = () => {
       </div>
     </div>
   );
-  if (!isSec) return null;
+
+  // Signed in but NOT an approved secretariat → fullscreen blocker
+  if (!isSec) return <PendingApprovalBanner email={secEmail} />;
 
   const tabs = ALL_TABS.filter(t => perms.can(t.id, "view"));
   const activeTabMeta = tabs.find(t => t.id === activeTab) ?? tabs[0];
@@ -260,9 +262,6 @@ const Secretariat = () => {
               </div>
             )}
           </div>
-
-          {/* Pending banner */}
-          {edition && <PendingApprovalBanner editionId={edition.id} />}
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-24">
