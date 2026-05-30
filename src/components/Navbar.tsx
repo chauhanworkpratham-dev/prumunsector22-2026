@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, ChevronDown, User, LogOut, LayoutDashboard, ShieldCheck } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { useActiveEdition } from "@/hooks/useActiveEdition";
 import { useSession } from "@/hooks/useSession";
 import { getRegistrationByEmail, getSignedIdUrl } from "@/lib/munApi";
-import crest from "@/assets/prumun-crest.png";
 import { cn, initials } from "@/lib/utils";
 
 const NAV = [
@@ -19,10 +17,12 @@ const NAV = [
   { to: "/brochure",     label: "Brochure"               },
   { to: "/venue",        label: "Venue"                  },
   { to: "/about",        label: "About"                  },
+  { to: "/gallery",      label: "Gallery"                },
 ] as const;
 
 export const Navbar = () => {
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
+  const location  = useLocation();
   const { edition } = useActiveEdition();
   const { delegateEmail, secUser, isDelegate, isSecretariat, logoutDelegate, logoutSec } = useSession();
 
@@ -30,56 +30,54 @@ export const Navbar = () => {
   const [menuOpen,    setMenuOpen]    = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [delegateName, setDelegateName] = useState<string | null>(null);
-  const [avatarUrl,   setAvatarUrl]   = useState<string | null>(null);
+  const [avatarUrl,    setAvatarUrl]    = useState<string | null>(null);
 
   const profileRef = useRef<HTMLDivElement>(null);
-
   const brand = edition?.name?.split(" ")[0] ?? "PRUMUN";
-  const tag   = edition?.name?.split(" ").slice(1).join(" ") ?? "2026";
 
-  // Load delegate's full name + photo for the avatar
   useEffect(() => {
     if (!isDelegate || !delegateEmail || !edition) return;
     getRegistrationByEmail(edition.id, delegateEmail).then(r => {
-      if (r) {
-        setDelegateName(r.full_name);
-        // load profile photo if any
-        if (r.id_image_path) {
-          getSignedIdUrl(r.id_image_path).then(url => {
-            // only use if it's an image (not PDF)
-            if (url && !r.id_image_path.toLowerCase().endsWith(".pdf")) setAvatarUrl(url);
-          });
-        }
+      if (!r) return;
+      setDelegateName(r.full_name);
+      if (r.id_image_path && !r.id_image_path.toLowerCase().endsWith(".pdf")) {
+        getSignedIdUrl(r.id_image_path).then(url => { if (url) setAvatarUrl(url); });
       }
     });
   }, [isDelegate, delegateEmail, edition]);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 16);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    const fn = () => setScrolled(window.scrollY > 10);
+    fn();
+    window.addEventListener("scroll", fn, { passive: true });
+    return () => window.removeEventListener("scroll", fn);
   }, []);
 
   useEffect(() => {
-    const onResize = () => { if (window.innerWidth >= 1024) setMenuOpen(false); };
-    window.addEventListener("resize", onResize, { passive: true });
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
+    if (menuOpen) document.body.style.overflow = "hidden";
+    else document.body.style.overflow = "";
+    return () => { document.body.style.overflow = ""; };
+  }, [menuOpen]);
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    setMenuOpen(false);
+    setProfileOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  const loggedIn = isDelegate || isSecretariat;
+  const loggedIn   = isDelegate || isSecretariat;
   const displayName = isSecretariat
-    ? (secUser?.email ?? "Secretariat")
-    : (delegateName ?? delegateEmail ?? "Delegate");
-  const avatarLetters = initials(displayName.includes("@") ? displayName.split("@")[0] : displayName);
+    ? (secUser?.email?.split("@")[0] ?? "Admin")
+    : (delegateName ?? delegateEmail?.split("@")[0] ?? "Delegate");
+  const avatarLetters = initials(displayName);
+  const profileHref   = isSecretariat ? "/secretariat" : "/delegate";
 
   const handleLogout = async () => {
     setProfileOpen(false);
@@ -87,213 +85,188 @@ export const Navbar = () => {
     else { logoutDelegate(); navigate("/"); }
   };
 
-  const profileHref = isSecretariat ? "/secretariat" : "/delegate";
-
-  /* ── Whether the page hero is dark (needs white nav text when unscrolled) ── */
-  const isAtTop = !scrolled;
-  const isHomePage = typeof window !== "undefined" && window.location.pathname === "/";
-  const heroDark = isHomePage && isAtTop; // hero has hardcoded dark bg
-
   return (
-    <header className={cn(
-      "fixed top-0 inset-x-0 z-50 transition-all duration-300",
-      scrolled
-        ? "glass-nav py-2.5"
-        : heroDark
-          ? "bg-transparent py-5"
-          : "bg-white/90 dark:bg-background/90 backdrop-blur-md border-b border-border/40 py-3 shadow-sm",
-    )}>
-      <div className="container flex items-center justify-between">
+    <>
+      <header className={cn(
+        "fixed top-0 inset-x-0 z-50 transition-all duration-300",
+        scrolled || menuOpen
+          ? "glass-nav py-2"
+          : "bg-transparent py-4"
+      )}>
+        <div className="container flex items-center justify-between gap-4">
 
-        {/* Brand — bigger logo */}
-        <Link to="/" className="flex items-center gap-3 group shrink-0">
-          <div className="w-11 h-11 rounded-xl overflow-hidden ring-2 ring-primary/30 transition-transform group-hover:scale-105 shadow-md bg-white flex items-center justify-center">
-            <img
-              src={edition?.header_logo_url ?? edition?.logo_url ?? crest}
-              alt={brand}
-              width={44}
-              height={44}
-              className="w-10 h-10 object-contain"
-            />
-          </div>
-          <div className="leading-none">
-            <div className={cn(
-              "font-display font-bold text-[18px] tracking-tight transition-colors",
-              heroDark ? "text-white" : "text-foreground"
-            )}>{brand}</div>
-            <div className={cn(
-              "text-[8px] tracking-[0.28em] font-semibold uppercase mt-0.5 transition-colors",
-              heroDark ? "text-white/70" : "text-primary/70"
-            )}>{tag}</div>
-          </div>
-        </Link>
+          {/* Brand wordmark — no image, gradient text */}
+          <Link to="/" className="flex items-center gap-2 shrink-0 group">
+            <div className="flex flex-col leading-none">
+              <span className={cn(
+                "font-display font-black text-[22px] tracking-tight transition-all",
+                scrolled ? "gradient-text" : "text-white drop-shadow-sm"
+              )}>
+                {brand}
+              </span>
+              <span className={cn(
+                "text-[7.5px] tracking-[0.3em] font-bold uppercase transition-all",
+                scrolled ? "text-primary/60" : "text-white/60"
+              )}>
+                Model UN
+              </span>
+            </div>
+          </Link>
 
-        {/* Desktop nav */}
-        <nav className="hidden lg:flex items-center gap-0.5" aria-label="Main">
-          {NAV.map(l => (
-            <NavLink
-              key={l.to}
-              to={l.to}
-              end={"end" in l ? (l as any).end : undefined}
-              className={heroDark ? "text-white/80 hover:text-white hover:bg-white/10" : ""}
-            >
-              {l.label}
-            </NavLink>
-          ))}
-        </nav>
-
-        {/* Desktop right */}
-        <div className="hidden lg:flex items-center gap-2">
-          <ThemeToggle />
-
-          {loggedIn ? (
-            <div ref={profileRef} className="relative">
-              <button
-                onClick={() => setProfileOpen(v => !v)}
+          {/* Desktop pill nav */}
+          <nav className="hidden lg:flex items-center gap-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-2 py-1.5">
+            {NAV.map(l => (
+              <NavLink
+                key={l.to}
+                to={l.to}
+                end={"end" in l ? (l as any).end : undefined}
                 className={cn(
-                  "flex items-center gap-2 rounded-xl px-3 py-2 transition-all",
-                  heroDark
-                    ? "bg-white/10 border border-white/20 hover:bg-white/20"
-                    : "glass hover:border-primary/40"
+                  "px-3.5 py-1.5 rounded-full text-sm font-semibold transition-all duration-200",
+                  scrolled
+                    ? "text-foreground/70 hover:text-foreground hover:bg-secondary"
+                    : "text-white/80 hover:text-white hover:bg-white/15"
                 )}
-                aria-haspopup="true"
-                aria-expanded={profileOpen}
+                activeClassName={cn(
+                  "font-bold",
+                  scrolled ? "text-primary bg-primary/8" : "text-white bg-white/20"
+                )}
               >
-                {/* Avatar circle — show photo if available */}
-                <div className="w-7 h-7 rounded-full overflow-hidden bg-gradient-primary text-white flex items-center justify-center text-xs font-bold shrink-0">
-                  {avatarUrl
-                    ? <img src={avatarUrl} alt={avatarLetters} className="w-full h-full object-cover" />
-                    : avatarLetters
-                  }
-                </div>
-                <span className={cn(
-                  "text-sm font-semibold max-w-[140px] truncate",
-                  heroDark ? "text-white" : "text-foreground"
-                )}>
-                  {displayName.includes("@") ? displayName.split("@")[0] : displayName.split(" ")[0]}
-                </span>
-                <ChevronDown className={cn(
-                  "w-3.5 h-3.5 transition-transform",
-                  profileOpen && "rotate-180",
-                  heroDark ? "text-white/70" : "text-muted-foreground"
-                )} />
-              </button>
+                {l.label}
+              </NavLink>
+            ))}
+          </nav>
 
-              {profileOpen && (
-                <div className="absolute right-0 top-full mt-2 w-56 glass-strong rounded-2xl py-1.5 shadow-elegant animate-fade-in border border-border/60 z-50">
-                  <div className="px-4 py-3 border-b border-border/50">
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-primary text-white flex items-center justify-center text-sm font-bold mx-auto mb-2">
-                      {avatarUrl
-                        ? <img src={avatarUrl} alt={avatarLetters} className="w-full h-full object-cover" />
-                        : avatarLetters
-                      }
+          {/* Desktop right */}
+          <div className="hidden lg:flex items-center gap-2">
+            {loggedIn ? (
+              <div ref={profileRef} className="relative">
+                <button
+                  onClick={() => setProfileOpen(v => !v)}
+                  className={cn(
+                    "flex items-center gap-2 rounded-full pr-3 pl-1 py-1 border transition-all",
+                    scrolled
+                      ? "border-border/60 bg-white hover:border-primary/40 hover:bg-primary/4 shadow-sm"
+                      : "border-white/25 bg-white/15 hover:bg-white/25 text-white"
+                  )}
+                >
+                  <div className="w-7 h-7 rounded-full overflow-hidden bg-gradient-primary flex items-center justify-center text-xs font-bold text-white shrink-0">
+                    {avatarUrl ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" /> : avatarLetters}
+                  </div>
+                  <span className={cn("text-sm font-semibold max-w-[120px] truncate", !scrolled && "text-white")}>
+                    {displayName}
+                  </span>
+                  <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", profileOpen && "rotate-180", !scrolled ? "text-white/70" : "text-muted-foreground")} />
+                </button>
+
+                {profileOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-52 glass-strong rounded-2xl py-1.5 shadow-elegant border border-border/50 z-50 animate-slide-up">
+                    <div className="px-4 py-3 border-b border-border/40 flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-primary flex items-center justify-center text-sm font-bold text-white shrink-0">
+                        {avatarUrl ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" /> : avatarLetters}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold truncate">{displayName}</p>
+                        <p className="text-[10px] text-muted-foreground">{isSecretariat ? "Secretariat" : "Delegate"}</p>
+                      </div>
                     </div>
-                    <p className="text-xs font-semibold text-center truncate">{displayName}</p>
-                    <p className="text-[10px] text-muted-foreground text-center mt-0.5">
-                      {isSecretariat ? "Secretariat" : "Delegate"}
-                    </p>
-                  </div>
-                  <div className="p-1.5 space-y-0.5">
-                    <Link to={profileHref} onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm hover:bg-primary/8 hover:text-primary transition-colors w-full">
-                      {isSecretariat ? <><ShieldCheck className="w-4 h-4" /> Admin Portal</> : <><User className="w-4 h-4" /> My Profile</>}
-                    </Link>
-                    {isDelegate && (
-                      <Link to="/delegate" onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm hover:bg-primary/8 hover:text-primary transition-colors w-full">
-                        <LayoutDashboard className="w-4 h-4" /> My Portfolio
+                    <div className="p-1.5 space-y-0.5">
+                      <Link to={profileHref} className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm hover:bg-primary/8 hover:text-primary transition-colors w-full">
+                        {isSecretariat ? <><ShieldCheck className="w-4 h-4" /> Admin Portal</> : <><User className="w-4 h-4" /> My Profile</>}
                       </Link>
-                    )}
-                    <div className="h-px bg-border/50 my-1" />
-                    <button onClick={handleLogout}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm hover:bg-destructive/8 hover:text-destructive transition-colors w-full text-left">
-                      <LogOut className="w-4 h-4" /> Sign out
-                    </button>
+                      {isDelegate && (
+                        <Link to="/delegate" className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm hover:bg-primary/8 hover:text-primary transition-colors w-full">
+                          <LayoutDashboard className="w-4 h-4" /> My Portfolio
+                        </Link>
+                      )}
+                      <div className="h-px bg-border/50 my-1" />
+                      <button onClick={handleLogout} className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm hover:bg-destructive/8 hover:text-destructive transition-colors w-full text-left">
+                        <LogOut className="w-4 h-4" /> Sign out
+                      </button>
+                    </div>
                   </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link to="/login"
+                  className={cn("px-4 py-2 rounded-full text-sm font-semibold transition-all",
+                    scrolled ? "text-foreground/70 hover:text-foreground hover:bg-secondary" : "text-white/80 hover:text-white hover:bg-white/15"
+                  )}>Login</Link>
+                <Link to="/register"
+                  className="px-5 py-2 rounded-full text-sm font-bold bg-white text-primary shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200">
+                  Register
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile right */}
+          <div className="flex lg:hidden items-center gap-2">
+            {loggedIn && (
+              <Link to={profileHref} className="w-8 h-8 rounded-full overflow-hidden bg-gradient-primary flex items-center justify-center text-xs font-bold text-white">
+                {avatarUrl ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" /> : avatarLetters}
+              </Link>
+            )}
+            <button
+              onClick={() => setMenuOpen(v => !v)}
+              className={cn("p-2 rounded-full transition-all", scrolled ? "hover:bg-secondary" : "hover:bg-white/15 text-white")}
+              aria-label="Toggle menu" aria-expanded={menuOpen}
+            >
+              {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile full-screen drawer */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-40 lg:hidden flex flex-col animate-fade-in">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-white/95 backdrop-blur-xl" onClick={() => setMenuOpen(false)} />
+          <div className="relative flex flex-col h-full overflow-y-auto pt-20 pb-8 px-6">
+            <nav className="flex flex-col gap-1 mb-6">
+              {NAV.map(l => (
+                <Link key={l.to} to={l.to}
+                  className={cn(
+                    "flex items-center px-4 py-3.5 rounded-2xl text-base font-semibold transition-all",
+                    location.pathname === l.to
+                      ? "bg-primary/8 text-primary"
+                      : "text-foreground/70 hover:bg-secondary hover:text-foreground"
+                  )}>
+                  {l.label}
+                </Link>
+              ))}
+            </nav>
+            <div className="border-t border-border/50 pt-4">
+              {loggedIn ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3 px-4 py-3 glass rounded-2xl mb-2">
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-primary flex items-center justify-center text-sm font-bold text-white shrink-0">
+                      {avatarUrl ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" /> : avatarLetters}
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm">{displayName}</p>
+                      <p className="text-xs text-muted-foreground">{isSecretariat ? "Secretariat" : "Delegate"}</p>
+                    </div>
+                  </div>
+                  <Link to={profileHref} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold hover:bg-secondary transition-colors">
+                    {isSecretariat ? <ShieldCheck className="w-4 h-4 text-primary" /> : <User className="w-4 h-4 text-primary" />}
+                    {isSecretariat ? "Admin Portal" : "My Profile"}
+                  </Link>
+                  <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-destructive hover:bg-destructive/8 transition-colors w-full text-left">
+                    <LogOut className="w-4 h-4" /> Sign out
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-3">
+                  <Link to="/login" className="flex-1 py-3 rounded-2xl text-sm font-bold border border-border text-center hover:bg-secondary transition-colors">Login</Link>
+                  <Link to="/register" className="flex-1 py-3 rounded-2xl text-sm font-bold bg-gradient-primary text-white text-center">Register</Link>
                 </div>
               )}
             </div>
-          ) : (
-            <>
-              <Link to="/login"
-                className={cn(
-                  "px-4 py-2 rounded-xl text-sm font-semibold transition-all",
-                  heroDark
-                    ? "text-white/80 hover:text-white hover:bg-white/10"
-                    : "text-foreground/70 hover:text-foreground hover:bg-secondary/60"
-                )}>
-                Login
-              </Link>
-              <Link to="/register"
-                className="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-primary text-white shadow-sm hover:opacity-90 transition-all">
-                Register
-              </Link>
-            </>
-          )}
-        </div>
-
-        {/* Mobile row */}
-        <div className="flex lg:hidden items-center gap-1.5">
-          <ThemeToggle />
-          {loggedIn && (
-            <Link to={profileHref}
-              className="w-8 h-8 rounded-full overflow-hidden bg-gradient-primary text-white flex items-center justify-center text-xs font-bold">
-              {avatarUrl
-                ? <img src={avatarUrl} alt={avatarLetters} className="w-full h-full object-cover" />
-                : avatarLetters
-              }
-            </Link>
-          )}
-          <button
-            onClick={() => setMenuOpen(v => !v)}
-            className={cn(
-              "p-2 rounded-xl transition-colors",
-              heroDark ? "text-white hover:bg-white/10" : "hover:bg-secondary/60"
-            )}
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={menuOpen}
-            aria-controls="mobile-nav"
-          >
-            {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile drawer */}
-      {menuOpen && (
-        <div id="mobile-nav" className="lg:hidden mt-2 mx-4 glass-strong rounded-2xl p-3 animate-slide-up border border-border/50">
-          <nav className="flex flex-col gap-0.5" aria-label="Mobile">
-            {NAV.map(l => (
-              <NavLink key={l.to} to={l.to} end={"end" in l ? (l as any).end : undefined}
-                className="w-full text-left px-4 py-2.5"
-                onClick={() => setMenuOpen(false)}>{l.label}</NavLink>
-            ))}
-          </nav>
-          <div className="divider my-2.5" />
-          {loggedIn ? (
-            <div className="flex flex-col gap-1 px-1">
-              <Link to={profileHref} onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-secondary/60 transition-colors">
-                <div className="w-6 h-6 rounded-full overflow-hidden bg-gradient-primary text-white flex items-center justify-center text-[10px] font-bold">
-                  {avatarUrl ? <img src={avatarUrl} alt={avatarLetters} className="w-full h-full object-cover" /> : avatarLetters}
-                </div>
-                {isSecretariat ? "Admin Portal" : "My Profile"}
-              </Link>
-              <button onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-destructive hover:bg-destructive/8 transition-colors w-full text-left">
-                <LogOut className="w-4 h-4" /> Sign out
-              </button>
-            </div>
-          ) : (
-            <div className="flex gap-2 px-1">
-              <Link to="/login" onClick={() => setMenuOpen(false)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-border text-center hover:bg-secondary transition-colors">Login</Link>
-              <Link to="/register" onClick={() => setMenuOpen(false)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-gradient-primary text-white text-center shadow-sm">Register</Link>
-            </div>
-          )}
+          </div>
         </div>
       )}
-    </header>
+    </>
   );
 };
