@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate }         from "react-router-dom";
 import { Navbar }              from "@/components/Navbar";
-import { Button }              from "@/components/ui/button";
 import { useSecretariatAuth }  from "@/hooks/useSecretariatAuth";
 import { useActiveEdition }    from "@/hooks/useActiveEdition";
 import { usePermissions }      from "@/hooks/usePermissions";
@@ -10,7 +9,7 @@ import {
   LogOut, ShieldCheck, Users, Megaphone, CalendarDays, FileText,
   Video, Radio, Building2, Settings, Archive, UserCog, ClipboardCheck,
   Crown, HardHat, MessageSquare, Bot, CreditCard, ChevronRight,
-  LayoutDashboard, Menu, X, Trophy,
+  LayoutDashboard, Menu, X, Trophy, BarChart3,
 } from "lucide-react";
 import { AttendanceTab }          from "@/components/secretariat/AttendanceTab";
 import { DelegatesTab }           from "@/components/secretariat/DelegatesTab";
@@ -29,40 +28,42 @@ import { MembersTab }             from "@/components/secretariat/MembersTab";
 import { AIChatLogsTab }          from "@/components/secretariat/AIChatLogsTab";
 import { PaymentsTab }            from "@/components/secretariat/PaymentsTab";
 import { GradesTab }              from "@/components/secretariat/GradesTab";
+import { AnalyticsTab }           from "@/components/secretariat/AnalyticsTab";
 import { PendingApprovalBanner }  from "@/components/secretariat/PendingApprovalBanner";
 import type { TabKey }            from "@/lib/munApi";
 import { cn, initials }           from "@/lib/utils";
 
 const ALL_TABS: { id: TabKey; label: string; icon: any; group: string }[] = [
-  { id: "delegates",    label: "Delegates",        icon: Users,          group: "People"  },
-  { id: "eb",           label: "Executive Board",  icon: Crown,          group: "People"  },
-  { id: "oc",           label: "OC",               icon: HardHat,        group: "People"  },
-  { id: "attendance",   label: "Attendance",       icon: ClipboardCheck, group: "People"  },
-  { id: "payments",     label: "Payments",         icon: CreditCard,     group: "People"  },
-  { id: "grades",       label: "Grades",           icon: Trophy,         group: "People"  },
-  { id: "announcements",label: "Announcements",    icon: Megaphone,      group: "Content" },
-  { id: "schedule",     label: "Schedule",         icon: CalendarDays,   group: "Content" },
-  { id: "brochure",     label: "Brochure",         icon: FileText,       group: "Content" },
-  { id: "training",     label: "Training Library", icon: Video,          group: "Content" },
-  { id: "sessions",     label: "Live Sessions",    icon: Radio,          group: "Content" },
-  { id: "committees",   label: "Committees",       icon: Building2,      group: "Content" },
-  { id: "contacts",     label: "Messages",         icon: MessageSquare,  group: "System"  },
-  { id: "members",      label: "Members",          icon: UserCog,        group: "System"  },
-  { id: "ai_chats",     label: "AI Logs",          icon: Bot,            group: "System"  },
-  { id: "settings",     label: "CMS",              icon: Settings,       group: "System"  },
-  { id: "editions",     label: "Editions",         icon: Archive,        group: "System"  },
+  { id: "analytics",    label: "Analytics",        icon: BarChart3,      group: "Overview" },
+  { id: "grades",       label: "Grades",           icon: Trophy,         group: "Overview" },
+  { id: "delegates",    label: "Delegates",        icon: Users,          group: "People"   },
+  { id: "eb",           label: "Executive Board",  icon: Crown,          group: "People"   },
+  { id: "oc",           label: "OC",               icon: HardHat,        group: "People"   },
+  { id: "attendance",   label: "Attendance",       icon: ClipboardCheck, group: "People"   },
+  { id: "payments",     label: "Payments",         icon: CreditCard,     group: "People"   },
+  { id: "announcements",label: "Announcements",    icon: Megaphone,      group: "Content"  },
+  { id: "schedule",     label: "Schedule",         icon: CalendarDays,   group: "Content"  },
+  { id: "brochure",     label: "Brochure",         icon: FileText,       group: "Content"  },
+  { id: "training",     label: "Training Library", icon: Video,          group: "Content"  },
+  { id: "sessions",     label: "Live Sessions",    icon: Radio,          group: "Content"  },
+  { id: "committees",   label: "Committees",       icon: Building2,      group: "Content"  },
+  { id: "contacts",     label: "Messages",         icon: MessageSquare,  group: "System"   },
+  { id: "members",      label: "Members",          icon: UserCog,        group: "System"   },
+  { id: "ai_chats",     label: "AI Logs",          icon: Bot,            group: "System"   },
+  { id: "settings",     label: "CMS",              icon: Settings,       group: "System"   },
+  { id: "editions",     label: "Editions",         icon: Archive,        group: "System"   },
 ];
 
-const GROUPS = ["People", "Content", "System"] as const;
+const GROUPS = ["Overview", "People", "Content", "System"] as const;
 
 const Secretariat = () => {
   const navigate = useNavigate();
   const { checking, isSec, userId } = useSecretariatAuth();
   const { edition, refresh: refreshEdition } = useActiveEdition();
   const perms = usePermissions(userId);
-  const [activeTab,     setActiveTab]     = useState<TabKey>("delegates");
-  const [secEmail,      setSecEmail]      = useState<string | null>(null);
-  const [sideCollapsed, setSideCollapsed] = useState(false);
+  const [activeTab,      setActiveTab]      = useState<TabKey>("analytics");
+  const [secEmail,       setSecEmail]       = useState<string | null>(null);
+  const [sideCollapsed,  setSideCollapsed]  = useState(false);
   const [mobileSideOpen, setMobileSideOpen] = useState(false);
 
   const logout = async () => { await supabase.auth.signOut(); navigate("/"); };
@@ -71,7 +72,6 @@ const Secretariat = () => {
     supabase.auth.getUser().then(({ data }) => setSecEmail(data.user?.email ?? null));
   }, []);
 
-  // Close mobile sidebar on tab switch
   const switchTab = (t: TabKey) => { setActiveTab(t); setMobileSideOpen(false); };
 
   if (checking) return (
@@ -83,36 +83,36 @@ const Secretariat = () => {
     </div>
   );
 
-  // Signed in but NOT an approved secretariat → fullscreen blocker
   if (!isSec) return <PendingApprovalBanner email={secEmail} />;
 
   const tabs = ALL_TABS.filter(t => perms.can(t.id, "view"));
   const activeTabMeta = tabs.find(t => t.id === activeTab) ?? tabs[0];
 
   const renderContent = () => {
-    if (!edition) return (
+    if (!edition && activeTab !== "editions") return (
       <div className="glass rounded-2xl p-16 text-center text-muted-foreground">
         No active edition. Create one in{" "}
-        <button className="text-primary font-semibold" onClick={() => switchTab("editions")}>Editions</button>.
+        <button className="text-primary font-semibold underline" onClick={() => switchTab("editions")}>Editions</button>.
       </div>
     );
     switch (activeTab) {
-      case "delegates":     return <DelegatesTab editionId={edition.id} roleFilter="delegate" />;
-      case "eb":            return <ExecutiveBoardTab editionId={edition.id} />;
-      case "oc":            return <OrganisingCommitteeTab editionId={edition.id} />;
-      case "attendance":    return <AttendanceTab editionId={edition.id} />;
-      case "payments":      return <PaymentsTab edition={edition} onSaved={refreshEdition} />;
-      case "grades":        return <GradesTab editionId={edition.id} />;
-      case "announcements": return <AnnouncementsTab editionId={edition.id} />;
-      case "schedule":      return <ScheduleTab editionId={edition.id} />;
-      case "brochure":      return <BrochureTab editionId={edition.id} />;
-      case "training":      return <TrainingLibraryTab editionId={edition.id} />;
-      case "sessions":      return <LiveSessionsTab editionId={edition.id} />;
-      case "committees":    return <CommitteesTab editionId={edition.id} />;
-      case "contacts":      return <SecretariatMessagesTab editionId={edition.id} />;
+      case "analytics":     return <AnalyticsTab editionId={edition?.id ?? ""} />;
+      case "grades":        return <GradesTab editionId={edition!.id} />;
+      case "delegates":     return <DelegatesTab editionId={edition!.id} roleFilter="delegate" />;
+      case "eb":            return <ExecutiveBoardTab editionId={edition!.id} />;
+      case "oc":            return <OrganisingCommitteeTab editionId={edition!.id} />;
+      case "attendance":    return <AttendanceTab editionId={edition!.id} />;
+      case "payments":      return <PaymentsTab edition={edition!} onSaved={refreshEdition} />;
+      case "announcements": return <AnnouncementsTab editionId={edition!.id} />;
+      case "schedule":      return <ScheduleTab editionId={edition!.id} />;
+      case "brochure":      return <BrochureTab editionId={edition!.id} />;
+      case "training":      return <TrainingLibraryTab editionId={edition!.id} />;
+      case "sessions":      return <LiveSessionsTab editionId={edition!.id} />;
+      case "committees":    return <CommitteesTab editionId={edition!.id} />;
+      case "contacts":      return <SecretariatMessagesTab editionId={edition!.id} />;
       case "members":       return <MembersTab />;
-      case "ai_chats":      return <AIChatLogsTab editionId={edition.id} />;
-      case "settings":      return <EditsTab edition={edition} onSaved={refreshEdition} />;
+      case "ai_chats":      return <AIChatLogsTab editionId={edition!.id} />;
+      case "settings":      return <EditsTab edition={edition!} onSaved={refreshEdition} />;
       case "editions":      return <EditionsTab activeEdition={edition} onChanged={refreshEdition} />;
       default: return null;
     }
@@ -143,7 +143,7 @@ const Secretariat = () => {
                         ? "bg-primary/10 text-primary font-semibold shadow-sm"
                         : "text-foreground/60 hover:bg-secondary/70 hover:text-foreground",
                     )}>
-                    <Icon className={cn("shrink-0", collapsed ? "w-4.5 h-4.5" : "w-4 h-4")} />
+                    <Icon className="w-4 h-4 shrink-0" />
                     {!collapsed && <span className="truncate text-[13px]">{t.label}</span>}
                     {active && !collapsed && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />}
                   </button>
@@ -164,7 +164,7 @@ const Secretariat = () => {
 
         {/* ══ Desktop sidebar ══ */}
         <aside className={cn(
-          "hidden md:flex flex-col border-r border-border/50 shrink-0 transition-all duration-300 bg-white/70 backdrop-blur-xl",
+          "hidden md:flex flex-col border-r border-border/50 shrink-0 transition-all duration-300 bg-white/80 backdrop-blur-xl",
           sideCollapsed ? "w-[60px]" : "w-[220px]",
         )}>
           <div className="flex items-center gap-2 px-3 py-4 border-b border-border/40 min-h-[56px]">
@@ -209,18 +209,18 @@ const Secretariat = () => {
           </div>
         </aside>
 
-        {/* ══ Mobile sidebar drawer ══ */}
+        {/* ══ Mobile sidebar drawer (full screen) ══ */}
         {mobileSideOpen && (
           <div className="md:hidden fixed inset-0 z-50 flex">
-            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setMobileSideOpen(false)} />
-            <aside className="relative w-72 max-w-[85vw] bg-white flex flex-col h-full shadow-2xl animate-slide-in">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileSideOpen(false)} />
+            <aside className="relative w-72 max-w-[85vw] bg-white/95 backdrop-blur-xl flex flex-col h-full shadow-2xl animate-slide-in">
               <div className="flex items-center justify-between px-4 py-4 border-b border-border/40">
                 <div>
                   <div className="flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-primary" />
                     <span className="text-xs font-bold text-primary tracking-widest uppercase">Admin Portal</span>
                   </div>
-                  {edition && <p className="text-[10px] text-muted-foreground">{edition.name}</p>}
+                  {edition && <p className="text-[10px] text-muted-foreground mt-0.5">{edition.name}</p>}
                 </div>
                 <button onClick={() => setMobileSideOpen(false)}
                   className="w-8 h-8 rounded-full hover:bg-secondary flex items-center justify-center">
@@ -249,22 +249,34 @@ const Secretariat = () => {
         {/* ══ Main content ══ */}
         <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
 
-          {/* Mobile top bar — hamburger only, no dropdown */}
-          <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-border/40 bg-white/80 backdrop-blur-sm sticky top-16 z-20">
-            <button onClick={() => setMobileSideOpen(true)}
-              className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center hover:bg-primary/10 transition-colors">
-              <Menu className="w-4.5 h-4.5" />
+          {/* Mobile floating action button to open sidebar */}
+          <div className="md:hidden fixed bottom-6 right-6 z-40">
+            <button
+              onClick={() => setMobileSideOpen(true)}
+              className="w-14 h-14 rounded-2xl bg-gradient-primary text-white shadow-elegant flex items-center justify-center hover:opacity-90 transition-all active:scale-95"
+              aria-label="Open navigation"
+            >
+              <Menu className="w-6 h-6" />
             </button>
+          </div>
+
+          {/* Mobile active tab indicator bar */}
+          <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-border/40 bg-white/80 backdrop-blur-sm">
             {activeTabMeta && (
-              <div className="flex items-center gap-2 min-w-0">
-                <activeTabMeta.icon className="w-4 h-4 text-primary shrink-0" />
-                <span className="font-bold text-sm truncate">{activeTabMeta.label}</span>
-              </div>
+              <>
+                <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <activeTabMeta.icon className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-sm truncate">{activeTabMeta.label}</p>
+                  {edition && <p className="text-[10px] text-muted-foreground truncate">{edition.name}</p>}
+                </div>
+              </>
             )}
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-24">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-6">
             <div className="animate-fade-in">
               {renderContent()}
             </div>
