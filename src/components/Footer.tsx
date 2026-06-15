@@ -46,7 +46,7 @@ export const Footer = () => {
 
   useEffect(() => {
     const stored = localStorage.getItem("mun_secretariats_list");
-    if (stored) { try { setContacts(JSON.parse(stored)); } catch {} }
+    if (stored) { try { setContacts(JSON.parse(stored)); } catch { /* ignore invalid JSON */ } }
   }, []);
 
   const brand     = edition?.name?.split(" ")[0] ?? "PRUMUN";
