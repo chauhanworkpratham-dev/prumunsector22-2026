@@ -4,24 +4,32 @@ import { cn } from "@/lib/utils";
 
 interface Props extends Omit<NavLinkProps, "className"> {
   className?: string;
+  /** Applied when link is active (token-safe inline style) */
+  activeClassName?: string;
+  /** Applied when link is active as inline style */
+  activeStyle?: React.CSSProperties;
+  /** Base inline style */
+  style?: React.CSSProperties;
 }
 
 /**
- * Accessible, active-aware navigation link using the project's design tokens.
- * Active state: primary colour text + subtle underline indicator.
+ * Active-aware navigation link.
+ * Supports activeClassName + activeStyle for token-safe per-theme overrides.
  */
 export const NavLink = forwardRef<HTMLAnchorElement, Props>(
-  ({ className, children, ...props }, ref) => (
+  ({ className, activeClassName, activeStyle, style, children, ...props }, ref) => (
     <RouterNavLink
       ref={ref}
       {...props}
+      style={({ isActive }) => ({
+        ...style,
+        ...(isActive ? activeStyle : {}),
+      })}
       className={({ isActive }) =>
         cn(
-          "relative px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200",
+          "relative px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-          isActive
-            ? "text-primary font-semibold after:absolute after:inset-x-2.5 after:-bottom-0.5 after:h-px after:rounded-full after:bg-primary"
-            : "text-foreground/65 hover:text-foreground hover:bg-primary/5",
+          isActive ? activeClassName : "",
           className,
         )
       }
