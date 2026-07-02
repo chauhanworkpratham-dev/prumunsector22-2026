@@ -1,40 +1,37 @@
-// About Us + Past Events public page
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { PageBackdrop } from "@/hooks/usePageBackground";
-import { Image, Users, Trophy, Plus, X, Upload, Trash2, Pencil, Save } from "lucide-react";
+import { Users, Trophy, Globe2, Heart, Plus, X, Upload, Trash2, Pencil, Save, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useSession } from "@/hooks/useSession";
-import { cn } from "@/lib/utils";
+import { useActiveEdition } from "@/hooks/useActiveEdition";
+import { getCommittees, type Committee } from "@/lib/munApi";
 
 type PastEvent = {
   id: string;
   year: string;
   title: string;
   description: string;
-  photos: string[];     // base64 or URL
+  photos: string[];
   winners: { name: string; award: string; committee: string }[];
 };
 
-const ABOUT_KEY   = "mun_about_content";
-const EVENTS_KEY  = "mun_past_events";
+const ABOUT_KEY  = "mun_about_content";
+const EVENTS_KEY = "mun_past_events";
 
 export default function AboutPage() {
   const { isSecretariat } = useSession();
+  const { edition } = useActiveEdition();
+  const [committees, setCommittees] = useState<Committee[]>([]);
   const [editMode, setEditMode] = useState(false);
-  const [about, setAbout]  = useState(
-    "PRUMUN (Prudence Model United Nations) is an annual inter-school simulation of the United Nations " +
-    "organized by Prudence School, Ashok Vihar. Since our inception, we have brought together hundreds of " +
-    "young delegates from across Delhi NCR to debate, deliberate, and develop into the world leaders of tomorrow. " +
-    "Our conferences are designed to challenge participants intellectually while building their confidence, " +
-    "empathy, and collaborative skills in a real-world diplomatic setting."
+  const [about, setAbout] = useState(
+    "PRUMUN is the flagship Model United Nations conference of Prudence International School. Now in its third edition, it convenes student delegates from across the region for two days of structured debate, careful diplomacy, and unforgettable encounters."
   );
   const [editAbout, setEditAbout] = useState(about);
-  const [events, setEvents]   = useState<PastEvent[]>([]);
+  const [events, setEvents] = useState<PastEvent[]>([]);
   const [addEventOpen, setAddEventOpen] = useState(false);
   const [newEvent, setNewEvent] = useState<Omit<PastEvent, "id">>({
     year: "", title: "", description: "", photos: [], winners: [],
@@ -42,11 +39,12 @@ export default function AboutPage() {
   const [newWinner, setNewWinner] = useState({ name: "", award: "", committee: "" });
 
   useEffect(() => {
+    if (edition) getCommittees(edition.id).then(setCommittees);
     const a = localStorage.getItem(ABOUT_KEY);
     if (a) { setAbout(a); setEditAbout(a); }
     const e = localStorage.getItem(EVENTS_KEY);
     if (e) setEvents(JSON.parse(e));
-  }, []);
+  }, [edition]);
 
   const saveAbout = () => {
     setAbout(editAbout);
@@ -55,11 +53,9 @@ export default function AboutPage() {
   };
 
   const addPhoto = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = ev => {
-      setNewEvent(p => ({ ...p, photos: [...p.photos, ev.target!.result as string] }));
-    };
-    reader.readAsDataURL(file);
+    const r = new FileReader();
+    r.onload = ev => setNewEvent(p => ({ ...p, photos: [...p.photos, ev.target!.result as string] }));
+    r.readAsDataURL(file);
   };
 
   const addEventFn = () => {
@@ -77,205 +73,201 @@ export default function AboutPage() {
     localStorage.setItem(EVENTS_KEY, JSON.stringify(updated));
   };
 
-  const addWinnerToNew = () => {
-    if (!newWinner.name || !newWinner.award) return;
-    setNewEvent(p => ({ ...p, winners: [...p.winners, { ...newWinner }] }));
-    setNewWinner({ name: "", award: "", committee: "" });
-  };
+  const STATS = [
+    { Icon: Users,  value: (edition as any)?.stat_delegates  ?? "150+", label: "Delegates"   },
+    { Icon: Globe2, value: (edition as any)?.stat_committees ?? String(committees.length || 6), label: "Committees" },
+    { Icon: Trophy, value: (edition as any)?.stat_awards     ?? "12+",  label: "Awards"      },
+    { Icon: Heart,  value: "2",                                          label: "Days"        },
+  ];
 
   return (
-    <div className="min-h-screen bg-background mesh-bg">
+    <div className="min-h-screen bg-white">
       <Navbar />
-      <PageBackdrop pageKey="about" />
 
-      {/* ── Hero ── */}
-      <section className="pt-28 md:pt-32 pb-12 container text-center">
-        <p className="section-label">Who We Are</p>
-        <h1 className="font-display text-4xl md:text-6xl font-bold gradient-text-deep mb-4 leading-tight mt-2">
-          About Us
-        </h1>
+      {/* ── Dark hero header ── */}
+      <div className="page-hero">
+        <div className="container max-w-4xl">
+          <span className="eyebrow" style={{ color: "rgba(201,151,58,0.85)" }}>About the Conference</span>
+          <h1 className="font-display font-bold text-white leading-tight"
+            style={{ fontSize: "clamp(2rem, 5vw, 3.25rem)" }}>
+            Three editions. One<br />
+            unwavering belief — that<br />
+            <span className="gold-text">dialogue</span> changes everything.
+          </h1>
+          <p className="text-white/55 text-sm mt-5 max-w-lg leading-relaxed">{about}</p>
+          {isSecretariat && !editMode && (
+            <button onClick={() => setEditMode(true)}
+              className="mt-4 text-xs text-white/40 hover:text-white/70 flex items-center gap-1.5 transition-colors">
+              <Pencil className="w-3 h-3" /> Edit about text
+            </button>
+          )}
+          {editMode && (
+            <div className="mt-4 space-y-3 max-w-lg">
+              <Textarea value={editAbout} onChange={e => setEditAbout(e.target.value)} rows={5}
+                className="text-sm bg-white/10 border-white/20 text-white placeholder:text-white/30" />
+              <div className="flex gap-2">
+                <button onClick={() => setEditMode(false)} className="text-xs text-white/40 hover:text-white/70">Cancel</button>
+                <button onClick={saveAbout} className="btn-gold text-xs px-3 py-1.5"><Save className="w-3 h-3" /> Save</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Stats row ── */}
+      <div className="bg-white border-b border-navy/8">
+        <div className="container max-w-4xl">
+          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-navy/8">
+            {STATS.map(({ Icon, value, label }) => (
+              <div key={label} className="flex flex-col items-center justify-center py-10 gap-2">
+                <Icon className="w-5 h-5 text-gold" />
+                <span className="font-display font-bold text-navy text-3xl leading-none">{value}</span>
+                <span className="text-[11px] text-navy/40 font-medium">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Our Committees ── */}
+      <section className="py-20 bg-white">
+        <div className="container max-w-4xl">
+          <div className="mb-8">
+            <span className="eyebrow">Our Committees</span>
+            <h2 className="font-display font-bold text-navy text-3xl md:text-4xl">Six rooms. Six worlds.</h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-3">
+            {(committees.length ? committees : [
+              { id:"1", short_name:"UNSC",  name:"United Nations Security Council",       agenda:"Crisis in the Sahel Region",         description:"A high-stakes crisis committee where delegates handle real-time international peace and security challenges.", portfolios:[], difficulty:"Advanced",     edition_id:"" },
+              { id:"2", short_name:"UNHRC", name:"United Nations Human Rights Council",   agenda:"Digital Rights & Mass Surveillance", description:"Debating the balance between national security and personal liberty in the age of pervasive surveillance.", portfolios:[], difficulty:"Intermediate", edition_id:"" },
+              { id:"3", short_name:"DISEC", name:"Disarmament & International Security",  agenda:"Autonomous Weapons Systems",         description:"Confronting the militarization of artificial intelligence and the regulation of lethal autonomous weapons.", portfolios:[], difficulty:"Advanced",     edition_id:"" },
+              { id:"4", short_name:"WHO",   name:"World Health Organization",              agenda:"Pandemic Preparedness & Response",   description:"Building global health resilience for the outbreaks of the next decade.",                                      portfolios:[], difficulty:"Beginner",     edition_id:"" },
+              { id:"5", short_name:"AIPPM", name:"All India Political Parties Meet",       agenda:"Uniform Civil Code",                 description:"An Indian political simulation where party representatives debate one of the country's most contentious questions.", portfolios:[], difficulty:"Intermediate", edition_id:"" },
+              { id:"6", short_name:"IP",    name:"International Press",                    agenda:"Reporting Live from PRUMUN",         description:"Journalists, photographers, and caricaturists chronicling the conference as it unfolds.",                       portfolios:[], difficulty:"Beginner",     edition_id:"" },
+            ] as Committee[]).map(c => (
+              <div key={c.id} className="card-committee">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h3 className="font-display font-bold text-navy text-xl">{c.short_name}</h3>
+                    <p className="text-navy/55 text-xs mt-0.5">{c.name}</p>
+                  </div>
+                  <div className="w-7 h-7 rounded-full border border-gold/30 flex items-center justify-center text-gold shrink-0">
+                    <Globe2 className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <div className="inline-flex items-center gap-1.5 bg-navy/5 rounded px-2 py-1 text-[11px] font-semibold text-navy/60 mb-3">
+                  Agenda · {c.agenda}
+                </div>
+                <p className="text-navy/50 text-xs leading-relaxed">{(c as any).description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
-      {/* ── About section ── */}
-      <section className="container pb-16 max-w-3xl">
-        <div className="glass-strong rounded-3xl p-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" />
-              <h2 className="font-display text-2xl font-bold">Our Story</h2>
+      {/* ── Past editions ── */}
+      <section className="py-20 bg-navy/2 border-t border-navy/8">
+        <div className="container max-w-4xl">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <span className="eyebrow">Our History</span>
+              <h2 className="font-display font-bold text-navy text-3xl md:text-4xl">Past Editions</h2>
             </div>
-            {isSecretariat && !editMode && (
-              <Button variant="outline" size="sm" onClick={() => setEditMode(true)}>
-                <Pencil className="w-3.5 h-3.5" /> Edit
-              </Button>
+            {isSecretariat && (
+              <button onClick={() => setAddEventOpen(true)} className="btn-gold text-xs px-3 py-1.5">
+                <Plus className="w-3.5 h-3.5" /> Add Edition
+              </button>
             )}
           </div>
 
-          {editMode ? (
-            <div className="space-y-3">
-              <Textarea value={editAbout} onChange={e => setEditAbout(e.target.value)} rows={8}
-                className="text-sm leading-relaxed" />
-              <div className="flex gap-2 justify-end">
-                <Button variant="ghost" size="sm" onClick={() => setEditMode(false)}>Cancel</Button>
-                <Button variant="hero" size="sm" onClick={saveAbout}><Save className="w-3.5 h-3.5" /> Save</Button>
-              </div>
+          {events.length === 0 ? (
+            <div className="border border-navy/8 rounded-sm py-16 text-center">
+              <Image className="w-10 h-10 mx-auto mb-3 text-navy/20" />
+              <p className="text-navy/40 text-sm">No past editions added yet.</p>
             </div>
           ) : (
-            <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{about}</p>
-          )}
-        </div>
-      </section>
-
-      {/* ── Past Events section ── */}
-      <section className="container pb-24 max-w-5xl">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <p className="section-label">Our History</p>
-            <h2 className="font-display text-3xl md:text-4xl font-bold gradient-text-deep mt-1">Past Editions</h2>
-          </div>
-          {isSecretariat && (
-            <Button variant="hero" size="sm" onClick={() => setAddEventOpen(true)}>
-              <Plus className="w-4 h-4" /> Add Edition
-            </Button>
-          )}
-        </div>
-
-        {events.length === 0 && (
-          <div className="glass rounded-3xl p-16 text-center text-muted-foreground">
-            <Image className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p>No past editions added yet.</p>
-            {isSecretariat && <p className="text-xs mt-1">Click "Add Edition" to add your first one.</p>}
-          </div>
-        )}
-
-        <div className="space-y-10">
-          {events.map(ev => (
-            <div key={ev.id} className="glass-strong rounded-3xl p-6 space-y-5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <span className="text-xs font-bold tracking-widest text-primary">{ev.year}</span>
-                  <h3 className="font-display text-xl font-bold mt-0.5">{ev.title}</h3>
-                  {ev.description && <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{ev.description}</p>}
-                </div>
-                {isSecretariat && (
-                  <Button variant="ghost" size="sm" className="text-destructive shrink-0" onClick={() => deleteEvent(ev.id)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-
-              {/* Photo gallery */}
-              {ev.photos.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {ev.photos.map((ph, i) => (
-                    <div key={i} className="aspect-video rounded-xl overflow-hidden bg-secondary">
-                      <img src={ph} alt={`${ev.title} photo ${i+1}`} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+            <div className="space-y-8">
+              {events.map(ev => (
+                <div key={ev.id} className="border border-navy/8 rounded-sm p-7 bg-white">
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                      <span className="eyebrow">{ev.year}</span>
+                      <h3 className="font-display font-bold text-navy text-xl">{ev.title}</h3>
+                      {ev.description && <p className="text-navy/50 text-sm mt-2 leading-relaxed">{ev.description}</p>}
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Winners */}
-              {ev.winners.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Trophy className="w-4 h-4 text-warning" />
-                    <h4 className="font-bold text-sm">Award Winners</h4>
+                    {isSecretariat && (
+                      <button onClick={() => deleteEvent(ev.id)} className="text-red-400 hover:text-red-600 transition-colors shrink-0">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
-                  <div className="grid sm:grid-cols-2 gap-2">
-                    {ev.winners.map((w, i) => (
-                      <div key={i} className="flex items-center gap-3 rounded-xl bg-warning/5 border border-warning/15 px-3 py-2">
-                        <Trophy className="w-4 h-4 text-warning shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold truncate">{w.name}</p>
-                          <p className="text-[11px] text-muted-foreground">{w.award} · {w.committee}</p>
+                  {ev.photos.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                      {ev.photos.map((ph, i) => (
+                        <div key={i} className="aspect-video rounded-sm overflow-hidden bg-navy/5">
+                          <img src={ph} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
                         </div>
+                      ))}
+                    </div>
+                  )}
+                  {ev.winners.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold tracking-widest text-navy/35 uppercase mb-2">Award Winners</p>
+                      <div className="grid sm:grid-cols-2 gap-2">
+                        {ev.winners.map((w, i) => (
+                          <div key={i} className="flex items-center gap-3 bg-gold/5 border border-gold/15 rounded-sm px-3 py-2">
+                            <Trophy className="w-4 h-4 text-gold shrink-0" />
+                            <div>
+                              <p className="text-xs font-bold text-navy">{w.name}</p>
+                              <p className="text-[10px] text-navy/40">{w.award} · {w.committee}</p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
-          ))}
+          )}
         </div>
       </section>
 
-      {/* ── Add Event Modal ── */}
+      {/* Add Edition Modal */}
       {addEventOpen && (
-        <div className="fixed inset-0 z-50 bg-foreground/60 flex items-center justify-center p-4"
+        <div className="fixed inset-0 z-50 bg-navy/40 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setAddEventOpen(false)}>
-          <div className="glass-strong rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-slide-up"
+          <div className="bg-white rounded-sm p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-slide-up shadow-elegant"
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h3 className="font-display text-xl font-bold">Add Past Edition</h3>
-              <button onClick={() => setAddEventOpen(false)} className="w-8 h-8 rounded-full hover:bg-secondary flex items-center justify-center">
-                <X className="w-4 h-4" />
-              </button>
+              <h3 className="font-display text-xl font-bold text-navy">Add Past Edition</h3>
+              <button onClick={() => setAddEventOpen(false)} className="text-navy/40 hover:text-navy"><X className="w-5 h-5" /></button>
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5"><Label>Year</Label>
-                  <Input value={newEvent.year} onChange={e => setNewEvent(p => ({ ...p, year: e.target.value }))} placeholder="2024" /></div>
-                <div className="space-y-1.5"><Label>Title</Label>
-                  <Input value={newEvent.title} onChange={e => setNewEvent(p => ({ ...p, title: e.target.value }))} placeholder="PRUMUN 2024" /></div>
+                <div><Label className="text-xs text-navy/55 mb-1.5 block">Year</Label>
+                  <Input value={newEvent.year} onChange={e => setNewEvent(p => ({ ...p, year: e.target.value }))} placeholder="2024" className="form-input h-9 border-navy/15" /></div>
+                <div><Label className="text-xs text-navy/55 mb-1.5 block">Title</Label>
+                  <Input value={newEvent.title} onChange={e => setNewEvent(p => ({ ...p, title: e.target.value }))} placeholder="PRUMUN 2024" className="form-input h-9 border-navy/15" /></div>
               </div>
-              <div className="space-y-1.5"><Label>Description</Label>
+              <div><Label className="text-xs text-navy/55 mb-1.5 block">Description</Label>
                 <Textarea rows={3} value={newEvent.description}
                   onChange={e => setNewEvent(p => ({ ...p, description: e.target.value }))}
-                  placeholder="Brief summary of the edition…" /></div>
-
-              {/* Photo upload */}
-              <div className="space-y-2">
-                <Label>Photos</Label>
-                <label className="flex items-center gap-2 glass rounded-xl px-4 py-3 cursor-pointer hover:bg-secondary transition">
-                  <Upload className="w-4 h-4" />
-                  <span className="text-sm">Upload photos (multiple)</span>
+                  className="text-sm border-navy/15" /></div>
+              <div>
+                <Label className="text-xs text-navy/55 mb-1.5 block">Photos</Label>
+                <label className="flex items-center gap-2 border border-navy/12 rounded-sm px-4 py-3 cursor-pointer hover:bg-navy/3 transition text-sm text-navy/60">
+                  <Upload className="w-4 h-4" /> Upload photos
                   <input type="file" multiple accept="image/*" className="hidden"
                     onChange={e => Array.from(e.target.files ?? []).forEach(addPhoto)} />
                 </label>
-                {newEvent.photos.length > 0 && (
-                  <div className="grid grid-cols-4 gap-2">
-                    {newEvent.photos.map((ph, i) => (
-                      <div key={i} className="relative aspect-video rounded-lg overflow-hidden bg-secondary">
-                        <img src={ph} alt="" className="w-full h-full object-cover" />
-                        <button onClick={() => setNewEvent(p => ({ ...p, photos: p.photos.filter((_, j) => j !== i) }))}
-                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
-
-              {/* Winners */}
-              <div className="space-y-2">
-                <Label>Award Winners</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  <Input placeholder="Delegate name" value={newWinner.name} onChange={e => setNewWinner(p => ({ ...p, name: e.target.value }))} />
-                  <Input placeholder="Award (Best Del.)" value={newWinner.award} onChange={e => setNewWinner(p => ({ ...p, award: e.target.value }))} />
-                  <Input placeholder="Committee" value={newWinner.committee} onChange={e => setNewWinner(p => ({ ...p, committee: e.target.value }))} />
-                </div>
-                <Button variant="outline" size="sm" onClick={addWinnerToNew}>
-                  <Plus className="w-3 h-3" /> Add Winner
-                </Button>
-                {newEvent.winners.map((w, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs glass rounded-xl px-3 py-2">
-                    <Trophy className="w-3.5 h-3.5 text-warning shrink-0" />
-                    <span className="flex-1">{w.name} — {w.award} ({w.committee})</span>
-                    <button onClick={() => setNewEvent(p => ({ ...p, winners: p.winners.filter((_, j) => j !== i) }))}>
-                      <X className="w-3 h-3 text-destructive" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-
               <div className="flex justify-end gap-2 pt-2">
-                <Button variant="ghost" onClick={() => setAddEventOpen(false)}>Cancel</Button>
-                <Button variant="hero" onClick={addEventFn}
-                  disabled={!newEvent.year || !newEvent.title}>
-                  <Save className="w-4 h-4" /> Save Edition
-                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setAddEventOpen(false)}>Cancel</Button>
+                <button className="btn-gold text-xs" onClick={addEventFn} disabled={!newEvent.year || !newEvent.title}>
+                  <Save className="w-3.5 h-3.5" /> Save Edition
+                </button>
               </div>
             </div>
           </div>

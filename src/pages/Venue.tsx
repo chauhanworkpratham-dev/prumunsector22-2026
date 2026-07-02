@@ -1,76 +1,97 @@
+import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { Button } from "@/components/ui/button";
+import { useActiveEdition } from "@/hooks/useActiveEdition";
+import { MapPin, Navigation, Phone, Mail, Clock } from "lucide-react";
 import { VENUE } from "@/lib/munData";
-import { MapPin, Navigation, Train, Car } from "lucide-react";
 
-const Venue = () => (
-  <div className="min-h-screen bg-background mesh-bg">
-    <Navbar />
-    <section className="pt-36 pb-12 container max-w-5xl">
-      <div className="text-center mb-10">
-        <p className="section-label">The Stage</p>
-        <h1 className="font-display text-5xl md:text-6xl font-bold gradient-text-deep mb-3">Venue</h1>
-        <p className="text-muted-foreground text-sm">Where diplomacy meets debate.</p>
-      </div>
+const Venue = () => {
+  const { edition } = useActiveEdition();
 
-      {/* Map */}
-      <div className="glass rounded-2xl overflow-hidden mb-6 shadow-card">
-        <div className="aspect-video w-full">
-          <iframe
-            title="Prudence School Sector 22 Dwarka"
-            src={`https://www.google.com/maps?q=${VENUE.mapsQuery}&output=embed`}
-            className="w-full h-full border-0"
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-          />
-        </div>
-        <div className="p-6">
-          <div className="flex items-start gap-4 mb-4">
-            <div className="w-11 h-11 rounded-xl bg-gradient-primary text-white flex items-center justify-center shrink-0">
-              <MapPin className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="font-display text-xl font-bold">{VENUE.name}</h2>
-              <p className="text-sm text-muted-foreground">{VENUE.address}</p>
-            </div>
-          </div>
-          <Button asChild className="bg-gradient-primary text-white border-0 font-semibold hover:opacity-90">
-            <a href={`https://www.google.com/maps/dir/?api=1&destination=${VENUE.mapsQuery}`}
-              target="_blank" rel="noopener noreferrer">
-              <Navigation className="w-4 h-4" /> Get Directions
-            </a>
-          </Button>
-        </div>
-      </div>
+  return (
+    <div className="min-h-screen bg-white">
+      <Navbar />
 
-      {/* Getting here */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="glass rounded-2xl p-6 hover-lift">
-          <div className="w-10 h-10 rounded-xl bg-primary/8 text-primary flex items-center justify-center mb-4">
-            <Train className="w-5 h-5" />
-          </div>
-          <h3 className="font-display font-bold text-lg mb-2">By Metro</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Nearest station: <span className="font-semibold text-foreground">Dwarka Sector 21</span> (Blue Line / Airport Express).
-            Approx. 7 minutes by auto-rickshaw from the station.
-          </p>
-        </div>
-        <div className="glass rounded-2xl p-6 hover-lift">
-          <div className="w-10 h-10 rounded-xl bg-primary/8 text-primary flex items-center justify-center mb-4">
-            <Car className="w-5 h-5" />
-          </div>
-          <h3 className="font-display font-bold text-lg mb-2">By Car</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Ample on-site parking available.{" "}
-            <span className="font-semibold text-foreground">25 min</span> from IGI Airport,{" "}
-            <span className="font-semibold text-foreground">45 min</span> from central New Delhi.
+      {/* Dark header */}
+      <div className="page-hero">
+        <div className="container max-w-4xl">
+          <span className="eyebrow" style={{ color: "rgba(201,151,58,0.85)" }}>Conference Venue</span>
+          <h1 className="font-display font-bold text-white leading-tight" style={{ fontSize: "clamp(2rem, 5vw, 3rem)" }}>
+            Where diplomacy meets education.
+          </h1>
+          <p className="text-white/50 text-sm mt-3">
+            Prudence International School proudly hosts {edition?.name ?? "PRUMUN 2026"}.
           </p>
         </div>
       </div>
-    </section>
-    <Footer />
-  </div>
-);
+
+      <section className="py-16 bg-white">
+        <div className="container max-w-5xl">
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Map — takes 2 cols */}
+            <div className="lg:col-span-2 border border-navy/8 rounded-sm overflow-hidden shadow-card">
+              <div className="aspect-[4/3] w-full">
+                <iframe
+                  title="Prudence School Sector 22 Dwarka"
+                  src={`https://www.google.com/maps?q=${VENUE.mapsQuery}&output=embed`}
+                  className="w-full h-full border-0"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+            </div>
+
+            {/* Info panel */}
+            <div className="space-y-4">
+              <div className="border border-navy/8 rounded-sm p-5 shadow-card">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-9 h-9 rounded-sm bg-navy flex items-center justify-center shrink-0">
+                    <MapPin className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-navy text-sm">{VENUE.name}</h3>
+                    <p className="text-navy/50 text-xs mt-0.5">{VENUE.address}</p>
+                  </div>
+                </div>
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${VENUE.mapsQuery}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="btn-gold w-full justify-center text-xs">
+                  <Navigation className="w-3.5 h-3.5" /> Get directions
+                </a>
+              </div>
+
+              <div className="border border-navy/8 rounded-sm p-5 shadow-card space-y-4">
+                <div className="flex items-center gap-2.5">
+                  <Clock className="w-4 h-4 text-gold shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-navy">Conference hours</p>
+                    <p className="text-xs text-navy/45">8:30 AM – 8:00 PM</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <Phone className="w-4 h-4 text-gold shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-navy">Helpline</p>
+                    <p className="text-xs text-navy/45">+91 11 2807 0000</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <Mail className="w-4 h-4 text-gold shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-navy">Secretariat</p>
+                    <p className="text-xs text-navy/45">secretariat@prumun.org</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
+    </div>
+  );
+};
 
 export default Venue;

@@ -1,4 +1,3 @@
-// Multi-track registration entry. Choose Delegate / Executive Board / Organising Committee.
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
@@ -8,7 +7,7 @@ import { useActiveEdition } from "@/hooks/useActiveEdition";
 import { getTeamInviteForEmail } from "@/lib/munApi";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, Gavel, Sparkles, ArrowRight, Mail } from "lucide-react";
+import { Users, Gavel, Sparkles, ArrowRight, Mail, Loader2 } from "lucide-react";
 import RegisterDelegate from "@/components/register/RegisterDelegate";
 import RegisterEB from "@/components/register/RegisterEB";
 import RegisterOC from "@/components/register/RegisterOC";
@@ -23,7 +22,6 @@ const Register = () => {
   const [emailCheck, setEmailCheck] = useState("");
   const [checkingEmail, setCheckingEmail] = useState(false);
 
-  // If user arrives with ?as=, jump straight in.
   useEffect(() => {
     const as = params.get("as");
     if (as === "delegate" || as === "eb" || as === "oc") setTrack(as);
@@ -41,76 +39,116 @@ const Register = () => {
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-background"><Navbar /><div className="pt-36 text-center text-muted-foreground">Loading…</div></div>;
+  if (loading) return (
+    <div className="min-h-screen bg-white">
+      <Navbar />
+      <div className="flex items-center justify-center pt-48">
+        <Loader2 className="w-5 h-5 animate-spin text-navy/30" />
+      </div>
+    </div>
+  );
 
   if (track === "delegate") return <RegisterDelegate />;
-  if (track === "eb") return <RegisterEB />;
-  if (track === "oc") return <RegisterOC />;
+  if (track === "eb")       return <RegisterEB />;
+  if (track === "oc")       return <RegisterOC />;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       <Navbar />
-      <section className="pt-36 pb-24 container max-w-4xl">
-        <div className="text-center mb-10">
-          <p className="text-xs tracking-[0.3em] text-primary font-bold mb-3">JOIN THE CONFERENCE</p>
-          <h1 className="font-display text-4xl md:text-5xl font-bold gradient-text-deep mb-3">How will you participate?</h1>
-          <p className="text-muted-foreground">Choose your track to get started.</p>
-        </div>
 
-        <div className="glass-strong rounded-3xl p-5 mb-8 max-w-xl mx-auto">
-          <Label className="text-xs uppercase tracking-widest text-muted-foreground">Already invited as a teammate?</Label>
-          <div className="flex gap-2 mt-2">
-            <Input type="email" value={emailCheck} onChange={e => setEmailCheck(e.target.value)} placeholder="your.email@example.com" />
-            <Button variant="hero" onClick={checkInvite} disabled={checkingEmail || !/\S+@\S+\.\S+/.test(emailCheck)}>
-              <Mail className="w-4 h-4" /> {checkingEmail ? "Checking…" : "Check invite"}
-            </Button>
+      {/* Dark header */}
+      <div className="page-hero">
+        <div className="container max-w-3xl text-center">
+          <span className="eyebrow" style={{ color: "rgba(201,151,58,0.85)" }}>Delegate Registration</span>
+          <h1 className="font-display font-bold text-white leading-tight" style={{ fontSize: "clamp(2rem, 5vw, 3rem)" }}>
+            Take your seat at {edition?.name?.split(" ")[0] ?? "PRUMUN"}
+          </h1>
+          <p className="text-white/50 text-sm mt-3">
+            Already registered?{" "}
+            <Link to="/login" className="text-gold hover:text-gold-light font-semibold underline-offset-2 hover:underline">
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </div>
+
+      {/* Track selection */}
+      <section className="py-16 bg-white">
+        <div className="container max-w-3xl">
+          {/* Invite checker */}
+          <div className="border border-navy/8 rounded-sm p-5 mb-10 max-w-lg mx-auto shadow-card">
+            <Label className="text-[10px] font-bold tracking-widest text-navy/40 uppercase block mb-2">
+              Already invited as a teammate?
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                type="email"
+                value={emailCheck}
+                onChange={e => setEmailCheck(e.target.value)}
+                placeholder="your.email@example.com"
+                className="flex-1 form-input h-9 text-sm"
+                style={{ border: "1px solid rgba(11,31,58,0.15)" }}
+              />
+              <button
+                onClick={checkInvite}
+                disabled={checkingEmail || !/\S+@\S+\.\S+/.test(emailCheck)}
+                className="btn-gold text-xs px-4 disabled:opacity-40 disabled:cursor-not-allowed">
+                {checkingEmail ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Mail className="w-3.5 h-3.5" /> Check</>}
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div className="grid md:grid-cols-3 gap-5">
-          <TrackCard
-            icon={Users}
-            title="Delegate"
-            description="Represent a country / portfolio in a committee. Pick two preferences, debate, draft resolutions."
-            cta="Register as Delegate"
-            onClick={() => setTrack("delegate")}
-          />
-          <TrackCard
-            icon={Gavel}
-            title="Executive Board"
-            description="Chair / Vice Chair / Rapporteur. One of each per committee — earn the gavel."
-            cta="Apply for the Board"
-            onClick={() => setTrack("eb")}
-          />
-          <TrackCard
-            icon={Sparkles}
-            title="Organising Committee"
-            description="Run the conference: logistics, hospitality, social media, design. No portfolio needed."
-            cta="Join the OC"
-            onClick={() => setTrack("oc")}
-          />
-        </div>
+          {/* Three track cards */}
+          <div className="grid md:grid-cols-3 gap-4">
+            {[
+              {
+                icon: Users, id: "delegate",
+                title: "Delegate",
+                desc: "Represent a country or portfolio in a committee. Pick two preferences, debate, draft resolutions.",
+                cta: "Register as Delegate",
+              },
+              {
+                icon: Gavel, id: "eb",
+                title: "Executive Board",
+                desc: "Chair, Vice Chair, or Rapporteur. One of each per committee — earn the gavel.",
+                cta: "Apply for the Board",
+              },
+              {
+                icon: Sparkles, id: "oc",
+                title: "Organising Committee",
+                desc: "Run the conference: logistics, hospitality, social media, design. No portfolio needed.",
+                cta: "Join the OC",
+              },
+            ].map(({ icon: Icon, id, title, desc, cta }) => (
+              <button
+                key={id}
+                onClick={() => setTrack(id as Track)}
+                className="border border-navy/8 rounded-sm p-6 text-left hover:border-gold/40 hover:shadow-card transition-all group bg-white"
+              >
+                <div className="w-11 h-11 rounded-sm bg-navy/5 flex items-center justify-center mb-5 group-hover:bg-gold/10 transition-colors">
+                  <Icon className="w-5 h-5 text-navy/60 group-hover:text-gold transition-colors" />
+                </div>
+                <h3 className="font-display font-bold text-navy text-xl mb-2">{title}</h3>
+                <p className="text-navy/50 text-xs leading-relaxed mb-5">{desc}</p>
+                <span className="text-gold text-xs font-semibold flex items-center gap-1">
+                  {cta} <ArrowRight className="w-3.5 h-3.5" />
+                </span>
+              </button>
+            ))}
+          </div>
 
-        <div className="text-center mt-10 text-sm text-muted-foreground">
-          Already registered? <Link to="/login" className="text-primary font-semibold hover:underline">Sign in to your portfolio</Link>
+          <p className="text-center mt-8 text-xs text-navy/40">
+            Already registered?{" "}
+            <Link to="/login" className="text-navy font-semibold hover:text-gold transition-colors">
+              Sign in to your portfolio
+            </Link>
+          </p>
         </div>
       </section>
+
       <Footer />
     </div>
   );
 };
-
-const TrackCard = ({ icon: Icon, title, description, cta, onClick }: {
-  icon: any; title: string; description: string; cta: string; onClick: () => void;
-}) => (
-  <button onClick={onClick} className="glass-strong rounded-3xl p-7 text-left hover-lift group transition-all">
-    <div className="w-14 h-14 rounded-2xl bg-gradient-primary text-primary-foreground flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-      <Icon className="w-7 h-7" />
-    </div>
-    <h3 className="font-display text-2xl font-bold mb-2">{title}</h3>
-    <p className="text-sm text-muted-foreground mb-5">{description}</p>
-    <span className="text-primary font-semibold text-sm flex items-center gap-1">{cta} <ArrowRight className="w-4 h-4" /></span>
-  </button>
-);
 
 export default Register;

@@ -1,5 +1,2 @@
-/* App.css — intentionally empty.
- * All styles live in src/index.css (Tailwind + PRUMUN design tokens).
- * This file exists only to satisfy the Vite scaffold import in main.tsx
- * if it exists; the actual import has been removed.
- */
+/* App.css — global resets only. All design tokens live in index.css */
+#root { min-height: 100vh; }

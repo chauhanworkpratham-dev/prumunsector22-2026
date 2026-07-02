@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
 export default {
-  darkMode: "selector",   // always dark — body never gets .light
+  darkMode: "class",   // light by default; .dark only for admin panels if needed
   content: [
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -27,23 +27,20 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
 
-        /* Brand tokens — referenced from CSS vars */
         navy: {
-          DEFAULT:    "var(--navy)",
-          mid:        "var(--navy-mid)",
-          light:      "var(--navy-light)",
-          foreground: "var(--navy-foreground)",
+          DEFAULT: "#0B1F3A",
+          mid:     "#162D4E",
+          light:   "#1E3A5F",
         },
         gold: {
-          DEFAULT:    "var(--gold)",
-          muted:      "var(--gold-muted)",
-          foreground: "var(--gold-foreground)",
+          DEFAULT: "#C9973A",
+          light:   "#E8B84B",
+          pale:    "#FDF4E3",
         },
 
         primary: {
           DEFAULT:    "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
-          hover:      "hsl(var(--primary-hover))",
         },
         secondary: {
           DEFAULT:    "hsl(var(--secondary))",
@@ -93,28 +90,27 @@ export default {
         "gradient-gold":    "var(--gradient-gold)",
         "gradient-subtle":  "var(--gradient-subtle)",
         "gradient-card":    "var(--gradient-card)",
-        /* Legacy aliases kept so existing JSX doesn't break */
+        /* legacy aliases */
         "gradient-primary": "var(--gradient-gold)",
         "gradient-deep":    "var(--gradient-hero)",
-        "gradient-glass":   "linear-gradient(135deg, oklch(0.28 0.07 263 / 0.85) 0%, oklch(0.26 0.08 263 / 0.70) 100%)",
-        "gradient-surface": "linear-gradient(180deg, oklch(0.24 0.08 263) 0%, oklch(0.22 0.09 263) 100%)",
       },
       boxShadow: {
-        elegant:  "var(--shadow-elegant)",
         card:     "var(--shadow-card)",
+        elegant:  "var(--shadow-elegant)",
         gold:     "var(--shadow-gold)",
-        glass:    "var(--shadow-glass)",
-        xs:       "var(--shadow-xs)",
-        /* Legacy aliases */
-        soft:     "var(--shadow-xs)",
+        sm:       "var(--shadow-sm)",
+        /* legacy aliases */
+        soft:     "var(--shadow-card)",
+        glass:    "var(--shadow-elegant)",
         glow:     "var(--shadow-gold)",
+        xs:       "var(--shadow-sm)",
       },
       borderRadius: {
         lg:  "var(--radius)",
-        md:  "calc(var(--radius) - 4px)",
-        sm:  "calc(var(--radius) - 8px)",
-        "2xl": "1.25rem",
-        "3xl": "1.5rem",
+        md:  "calc(var(--radius) - 2px)",
+        sm:  "calc(var(--radius) - 4px)",
+        "2xl": "1rem",
+        "3xl": "1.25rem",
       },
       keyframes: {
         "accordion-down": {
@@ -125,29 +121,13 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to:   { height: "0" },
         },
-        float: {
-          "0%, 100%": { transform: "translateY(0)"    },
-          "50%":       { transform: "translateY(-9px)" },
-        },
-        fadeInUp:  {
-          from: { opacity: "0", transform: "translateY(12px)" },
+        fadeUp: {
+          from: { opacity: "0", transform: "translateY(10px)" },
           to:   { opacity: "1", transform: "translateY(0)"    },
         },
         slideUp: {
-          from: { opacity: "0", transform: "translateY(24px)" },
+          from: { opacity: "0", transform: "translateY(20px)" },
           to:   { opacity: "1", transform: "translateY(0)"    },
-        },
-        slideIn: {
-          from: { opacity: "0", transform: "translateX(-14px)" },
-          to:   { opacity: "1", transform: "translateX(0)"     },
-        },
-        shimmer: {
-          "0%":   { backgroundPosition: "-200% 0" },
-          "100%": { backgroundPosition:  "200% 0" },
-        },
-        glowPulse: {
-          "0%, 100%": { boxShadow: "0 0 20px oklch(0.78 0.13 80 / 0.15)" },
-          "50%":       { boxShadow: "0 0 48px oklch(0.78 0.13 80 / 0.40)" },
         },
         pulseSoft: {
           "0%, 100%": { opacity: "1"    },
@@ -157,13 +137,9 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up":   "accordion-up 0.2s ease-out",
-        "float":          "float 7s ease-in-out infinite",
-        "fade-in":        "fadeInUp 0.45s cubic-bezier(0,0,0.2,1) both",
-        "fade-in-up":     "fadeInUp 0.50s cubic-bezier(0,0,0.2,1) both",
+        "fade-in":        "fadeUp 0.40s cubic-bezier(0,0,0.2,1) both",
+        "fade-in-up":     "fadeUp 0.50s cubic-bezier(0,0,0.2,1) both",
         "slide-up":       "slideUp 0.55s cubic-bezier(0.34,1.56,0.64,1) both",
-        "slide-in":       "slideIn 0.40s cubic-bezier(0,0,0.2,1) both",
-        "shimmer":        "shimmer 2.5s linear infinite",
-        "glow-pulse":     "glowPulse 3.5s ease-in-out infinite",
         "pulse-soft":     "pulseSoft 2.8s ease-in-out infinite",
       },
     },

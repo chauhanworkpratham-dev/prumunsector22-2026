@@ -9,15 +9,12 @@ import { cn, initials } from "@/lib/utils";
 
 const NAV = [
   { to: "/",             label: "Home",        end: true },
-  { to: "/secretariats", label: "Secretariats"           },
-  { to: "/staff",        label: "Staff"                  },
-  { to: "/committees",   label: "Committees"             },
-  { to: "/matrix",       label: "Matrix"                 },
-  { to: "/schedule",     label: "Schedule"               },
-  { to: "/brochure",     label: "Brochure"               },
-  { to: "/venue",        label: "Venue"                  },
-  { to: "/about",        label: "About"                  },
-  { to: "/gallery",      label: "Gallery"                },
+  { to: "/about",        label: "About"              },
+  { to: "/schedule",     label: "Schedule"           },
+  { to: "/matrix",       label: "Allotments"         },
+  { to: "/secretariats", label: "Updates"            },
+  { to: "/gallery",      label: "Gallery"            },
+  { to: "/venue",        label: "Venue"              },
 ] as const;
 
 export const Navbar = () => {
@@ -26,15 +23,17 @@ export const Navbar = () => {
   const { edition } = useActiveEdition();
   const { delegateEmail, secUser, isDelegate, isSecretariat, logoutDelegate, logoutSec } = useSession();
 
-  const [scrolled,    setScrolled]    = useState(false);
-  const [menuOpen,    setMenuOpen]    = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
+  const [scrolled,     setScrolled]     = useState(false);
+  const [menuOpen,     setMenuOpen]     = useState(false);
+  const [profileOpen,  setProfileOpen]  = useState(false);
   const [delegateName, setDelegateName] = useState<string | null>(null);
   const [avatarUrl,    setAvatarUrl]    = useState<string | null>(null);
 
   const profileRef = useRef<HTMLDivElement>(null);
-  const brand = edition?.name?.split(" ")[0] ?? "PRUMUN";
+  const brand      = edition?.name?.split(" ")[0] ?? "PRUMUN";
+  const sub        = edition?.name?.split(" ").slice(1).join(" ") ?? "";
 
+  /* load delegate name */
   useEffect(() => {
     if (!isDelegate || !delegateEmail || !edition) return;
     getRegistrationByEmail(edition.id, delegateEmail).then(r => {
@@ -47,15 +46,13 @@ export const Navbar = () => {
   }, [isDelegate, delegateEmail, edition]);
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 10);
-    fn();
-    window.addEventListener("scroll", fn, { passive: true });
+    const fn = () => setScrolled(window.scrollY > 8);
+    fn(); window.addEventListener("scroll", fn, { passive: true });
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
   useEffect(() => {
-    if (menuOpen) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
+    document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
 
@@ -69,8 +66,8 @@ export const Navbar = () => {
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  const loggedIn    = isDelegate || isSecretariat;
-  const displayName = isSecretariat
+  const loggedIn      = isDelegate || isSecretariat;
+  const displayName   = isSecretariat
     ? (secUser?.email?.split("@")[0] ?? "Admin")
     : (delegateName ?? delegateEmail?.split("@")[0] ?? "Delegate");
   const avatarLetters = initials(displayName);
@@ -84,99 +81,94 @@ export const Navbar = () => {
 
   return (
     <>
-      {/* ── Diplomatic fixed navbar ── */}
+      {/* ── Fixed white navbar ── */}
       <header className={cn(
-        "fixed top-0 inset-x-0 z-50 transition-all duration-300 glass-nav py-3",
-        scrolled && "py-2.5"
+        "fixed top-0 inset-x-0 z-50 transition-all duration-300",
+        scrolled
+          ? "navbar-light"
+          : "bg-transparent border-b border-white/10"
       )}>
-        <div className="container flex items-center justify-between gap-4">
+        <div className="container flex items-center justify-between h-14 gap-4">
 
-          {/* Brand wordmark */}
-          <Link to="/" className="flex items-center gap-3 shrink-0 group">
+          {/* Brand */}
+          <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
             <div className="flex flex-col leading-none">
-              <span className="font-display font-bold text-[19px] tracking-tight text-foreground leading-none group-hover:text-primary transition-colors duration-200">
+              <span className={cn(
+                "font-display font-bold text-[17px] leading-none tracking-tight transition-colors",
+                scrolled ? "text-navy" : "text-white"
+              )}>
                 {brand}
               </span>
-              <span className="text-[7.5px] tracking-[0.28em] font-semibold uppercase mt-1 whitespace-nowrap"
-                style={{ color: "oklch(0.78 0.13 80 / 0.70)" }}>
-                Prudence Model United Nations
-              </span>
+              {sub && (
+                <span className={cn(
+                  "text-[8px] tracking-[0.22em] font-semibold uppercase mt-0.5 transition-colors",
+                  scrolled ? "text-navy/40" : "text-white/40"
+                )}>
+                  {sub}
+                </span>
+              )}
             </div>
           </Link>
 
-          {/* Desktop nav links */}
-          <nav className="hidden lg:flex items-center gap-0.5 rounded-full px-2 py-1.5 border"
-            style={{
-              background: "oklch(0.20 0.09 263 / 0.70)",
-              borderColor: "oklch(0.78 0.13 80 / 0.12)",
-              backdropFilter: "blur(16px)",
-            }}>
+          {/* Desktop nav — center */}
+          <nav className="hidden lg:flex items-center gap-0.5 flex-1 justify-center">
             {NAV.map(l => (
               <NavLink
                 key={l.to}
                 to={l.to}
                 end={"end" in l ? (l as any).end : undefined}
-                className="px-3.5 py-1.5 rounded-full text-sm font-medium transition-all duration-200"
-                style={{ color: "oklch(0.75 0.03 263)", fontFamily: "'Inter', sans-serif" }}
-                activeClassName="font-semibold"
-                activeStyle={{
-                  background: "oklch(0.78 0.13 80 / 0.15)",
-                  color: "oklch(0.78 0.13 80)",
-                }}
+                className={cn(
+                  "px-3.5 py-1.5 rounded-md text-sm font-medium transition-all duration-150",
+                  scrolled ? "text-navy/65 hover:text-navy hover:bg-navy/5" : "text-white/65 hover:text-white hover:bg-white/8"
+                )}
+                activeClassName={scrolled
+                  ? "text-navy font-semibold bg-navy/8"
+                  : "text-white font-semibold bg-white/12"
+                }
               >
                 {l.label}
               </NavLink>
             ))}
           </nav>
 
-          {/* Desktop right side */}
+          {/* Desktop right */}
           <div className="hidden lg:flex items-center gap-2">
             {loggedIn ? (
               <div ref={profileRef} className="relative">
                 <button
                   onClick={() => setProfileOpen(v => !v)}
-                  className="flex items-center gap-2 rounded-full pr-3 pl-1 py-1 transition-all"
-                  style={{
-                    border: "1px solid oklch(0.78 0.13 80 / 0.18)",
-                    background: "oklch(0.24 0.08 263 / 0.80)",
-                  }}
+                  className={cn(
+                    "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all border",
+                    scrolled
+                      ? "border-navy/12 text-navy hover:bg-navy/5"
+                      : "border-white/20 text-white hover:bg-white/8"
+                  )}
                 >
-                  <div className="w-7 h-7 rounded-full overflow-hidden bg-gradient-gold flex items-center justify-center text-xs font-bold shrink-0"
-                    style={{ color: "oklch(0.18 0.04 263)" }}>
+                  <div className="w-6 h-6 rounded-full overflow-hidden bg-gold flex items-center justify-center text-[10px] font-bold text-white shrink-0">
                     {avatarUrl ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" /> : avatarLetters}
                   </div>
-                  <span className="text-sm font-medium max-w-[120px] truncate text-foreground">
-                    {displayName}
-                  </span>
-                  <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", profileOpen && "rotate-180")}
-                    style={{ color: "oklch(0.78 0.13 80 / 0.70)" }} />
+                  <span className="max-w-[110px] truncate">{displayName}</span>
+                  <ChevronDown className={cn("w-3.5 h-3.5 opacity-50 transition-transform", profileOpen && "rotate-180")} />
                 </button>
 
                 {profileOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-52 glass-strong rounded-2xl py-1.5 z-50 animate-slide-up"
-                    style={{ border: "1px solid oklch(0.78 0.13 80 / 0.15)" }}>
-                    <div className="px-4 py-3 flex items-center gap-3"
-                      style={{ borderBottom: "1px solid oklch(0.78 0.13 80 / 0.10)" }}>
-                      <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-gold flex items-center justify-center text-sm font-bold shrink-0"
-                        style={{ color: "oklch(0.18 0.04 263)" }}>
-                        {avatarUrl ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" /> : avatarLetters}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold truncate text-foreground">{displayName}</p>
-                        <p className="text-[10px] text-muted-foreground">{isSecretariat ? "Secretariat" : "Delegate"}</p>
-                      </div>
+                  <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-lg shadow-elegant border border-navy/8 py-1.5 z-50 animate-fade-in">
+                    <div className="px-4 py-3 border-b border-navy/6">
+                      <p className="text-xs font-semibold text-navy truncate">{displayName}</p>
+                      <p className="text-[10px] text-navy/45">{isSecretariat ? "Secretariat" : "Delegate"}</p>
                     </div>
-                    <div className="p-1.5 space-y-0.5">
-                      <Link to={profileHref} className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors w-full text-foreground hover:text-primary hover:bg-primary/10">
-                        {isSecretariat ? <><ShieldCheck className="w-4 h-4" /> Admin Portal</> : <><User className="w-4 h-4" /> My Profile</>}
+                    <div className="p-1">
+                      <Link to={profileHref} className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-navy hover:bg-navy/5 transition-colors w-full">
+                        {isSecretariat ? <ShieldCheck className="w-4 h-4 text-gold" /> : <User className="w-4 h-4 text-gold" />}
+                        {isSecretariat ? "Admin Portal" : "My Profile"}
                       </Link>
                       {isDelegate && (
-                        <Link to="/delegate" className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors w-full text-foreground hover:text-primary hover:bg-primary/10">
-                          <LayoutDashboard className="w-4 h-4" /> My Portfolio
+                        <Link to="/delegate" className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-navy hover:bg-navy/5 transition-colors w-full">
+                          <LayoutDashboard className="w-4 h-4 text-gold" /> My Portfolio
                         </Link>
                       )}
-                      <div className="h-px my-1" style={{ background: "oklch(0.78 0.13 80 / 0.10)" }} />
-                      <button onClick={handleLogout} className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors w-full text-left text-destructive hover:bg-destructive/10">
+                      <div className="h-px bg-navy/6 my-1" />
+                      <button onClick={handleLogout} className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left">
                         <LogOut className="w-4 h-4" /> Sign out
                       </button>
                     </div>
@@ -184,104 +176,68 @@ export const Navbar = () => {
                 )}
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <>
                 <Link to="/login"
-                  className="px-4 py-2 rounded-full text-sm font-medium transition-all text-muted-foreground hover:text-foreground hover:bg-muted">
-                  Login
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-md text-sm font-medium transition-all",
+                    scrolled ? "text-navy hover:bg-navy/5" : "text-white/80 hover:text-white hover:bg-white/8"
+                  )}>
+                  Sign in
                 </Link>
-                {/* Gold CTA */}
                 <Link to="/register"
-                  className="px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 hover:scale-105"
-                  style={{
-                    background: "var(--gradient-gold)",
-                    color: "oklch(0.18 0.04 263)",
-                    boxShadow: "var(--shadow-gold)",
-                  }}>
+                  className="px-4 py-1.5 rounded-md text-sm font-semibold bg-navy text-white hover:bg-navy-mid transition-all">
                   Register
                 </Link>
-              </div>
+              </>
             )}
           </div>
 
-          {/* Mobile right */}
-          <div className="flex lg:hidden items-center gap-2">
-            {loggedIn && (
-              <Link to={profileHref} className="w-8 h-8 rounded-full overflow-hidden bg-gradient-gold flex items-center justify-center text-xs font-bold"
-                style={{ color: "oklch(0.18 0.04 263)" }}>
-                {avatarUrl ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" /> : avatarLetters}
-              </Link>
-            )}
-            <button
-              onClick={() => setMenuOpen(v => !v)}
-              className="p-2 rounded-full transition-all text-muted-foreground hover:text-foreground hover:bg-muted"
-              aria-label="Toggle menu" aria-expanded={menuOpen}
-            >
-              {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setMenuOpen(v => !v)}
+            className={cn("lg:hidden p-2 rounded-md transition-all", scrolled ? "text-navy" : "text-white")}
+            aria-label="Menu"
+          >
+            {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
       </header>
 
-      {/* ── Mobile full-screen drawer ── */}
+      {/* ── Mobile drawer ── */}
       {menuOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden flex flex-col animate-fade-in">
-          {/* Navy backdrop */}
-          <div className="absolute inset-0" style={{ background: "oklch(0.20 0.09 263 / 0.97)", backdropFilter: "blur(24px)" }}
-            onClick={() => setMenuOpen(false)} />
-          <div className="relative flex flex-col h-full overflow-y-auto pt-20 pb-8 px-6">
-            {/* Gold thin rule */}
-            <div className="w-8 h-0.5 mb-6 rounded-full" style={{ background: "var(--gradient-gold)" }} />
-            <nav className="flex flex-col gap-0.5 mb-6">
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <div className="absolute inset-0 bg-navy/30 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
+          <div className="absolute top-14 inset-x-0 bg-white border-b border-navy/8 shadow-elegant animate-fade-in">
+            <nav className="container py-3 space-y-0.5">
               {NAV.map(l => (
                 <Link key={l.to} to={l.to}
                   className={cn(
-                    "flex items-center px-4 py-3 rounded-2xl text-base font-medium transition-all",
+                    "flex items-center px-3 py-2.5 rounded-md text-sm font-medium transition-all",
                     location.pathname === l.to
-                      ? "font-semibold"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                  )}
-                  style={location.pathname === l.to ? {
-                    background: "oklch(0.78 0.13 80 / 0.12)",
-                    color: "oklch(0.78 0.13 80)",
-                  } : {}}>
+                      ? "bg-navy/8 text-navy font-semibold"
+                      : "text-navy/65 hover:text-navy hover:bg-navy/5"
+                  )}>
                   {l.label}
                 </Link>
               ))}
             </nav>
-
-            <div className="pt-4" style={{ borderTop: "1px solid oklch(0.78 0.13 80 / 0.12)" }}>
+            <div className="container pb-5 pt-2 border-t border-navy/8">
               {loggedIn ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3 px-4 py-3 glass rounded-2xl mb-2">
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-gold flex items-center justify-center text-sm font-bold shrink-0"
-                      style={{ color: "oklch(0.18 0.04 263)" }}>
-                      {avatarUrl ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" /> : avatarLetters}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm text-foreground">{displayName}</p>
-                      <p className="text-xs text-muted-foreground">{isSecretariat ? "Secretariat" : "Delegate"}</p>
-                    </div>
-                  </div>
-                  <Link to={profileHref} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-muted">
-                    {isSecretariat ? <ShieldCheck className="w-4 h-4 text-primary" /> : <User className="w-4 h-4 text-primary" />}
-                    {isSecretariat ? "Admin Portal" : "My Profile"}
+                <div className="space-y-1">
+                  <Link to={profileHref} className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-navy hover:bg-navy/5">
+                    {isSecretariat ? <ShieldCheck className="w-4 h-4 text-gold" /> : <User className="w-4 h-4 text-gold" />}
+                    {displayName}
                   </Link>
-                  <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors w-full text-left">
+                  <button onClick={handleLogout} className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-red-600 hover:bg-red-50 w-full text-left">
                     <LogOut className="w-4 h-4" /> Sign out
                   </button>
                 </div>
               ) : (
-                <div className="flex gap-3">
-                  <Link to="/login" className="flex-1 py-3 rounded-2xl text-sm font-semibold text-center border transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
-                    style={{ borderColor: "oklch(0.78 0.13 80 / 0.18)" }}>
-                    Login
+                <div className="flex gap-2 pt-2">
+                  <Link to="/login" className="flex-1 py-2.5 text-center text-sm font-semibold rounded-md border border-navy/15 text-navy hover:bg-navy/5">
+                    Sign in
                   </Link>
-                  <Link to="/register" className="flex-1 py-3 rounded-2xl text-sm font-bold text-center transition-all"
-                    style={{
-                      background: "var(--gradient-gold)",
-                      color: "oklch(0.18 0.04 263)",
-                      boxShadow: "var(--shadow-gold)",
-                    }}>
+                  <Link to="/register" className="flex-1 py-2.5 text-center text-sm font-semibold rounded-md bg-navy text-white">
                     Register
                   </Link>
                 </div>

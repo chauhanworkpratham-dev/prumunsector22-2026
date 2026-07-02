@@ -2,11 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Mail, Users, Gavel, Sparkles, ShieldAlert, ArrowRight, Loader2 } from "lucide-react";
+import { Users, Gavel, Sparkles, ShieldAlert, ArrowRight, Loader2, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveEdition } from "@/hooks/useActiveEdition";
 import { getRegistrationByEmail } from "@/lib/munApi";
@@ -14,9 +11,9 @@ import { getRegistrationByEmail } from "@/lib/munApi";
 type Track = "delegate" | "eb" | "oc";
 
 const TRACKS: { id: Track; label: string; Icon: React.ElementType; tagline: string }[] = [
-  { id: "delegate",  label: "Delegate",            Icon: Users,    tagline: "Your portfolio · QR ticket" },
-  { id: "eb",        label: "Executive Board",      Icon: Gavel,    tagline: "Chair / VC / Rapporteur" },
-  { id: "oc",        label: "Organising Committee", Icon: Sparkles, tagline: "OC schedule & tools" },
+  { id: "delegate", label: "Delegate",            Icon: Users,    tagline: "Your portfolio · QR ticket"  },
+  { id: "eb",       label: "Executive Board",      Icon: Gavel,    tagline: "Chair / VC / Rapporteur"     },
+  { id: "oc",       label: "Organising Committee", Icon: Sparkles, tagline: "OC schedule & tools"         },
 ];
 
 const Login = () => {
@@ -37,133 +34,113 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFieldError("");
-
-    if (!validateEmail(email)) {
-      setFieldError("Enter a valid email address.");
-      return;
-    }
-    if (!edition) {
-      toast({ title: "Conference not loaded yet — try again.", variant: "destructive" });
-      return;
-    }
+    if (!validateEmail(email)) { setFieldError("Enter a valid email address."); return; }
+    if (!edition) { toast({ title: "Conference not loaded yet — try again.", variant: "destructive" }); return; }
 
     setBusy(true);
     try {
       const reg = await getRegistrationByEmail(edition.id, email.trim().toLowerCase());
-      if (!reg) {
-        setFieldError("No registration found with this email. Check the address or register first.");
-        return;
-      }
-
-      // Persist session token — the email is the identifier, kept intentionally
-      // simple since the portal is informational (no sensitive writes without
-      // server-side auth checks). See MIGRATIONS.md for a Supabase Auth upgrade path.
+      if (!reg) { setFieldError("No registration found. Check your email or register first."); return; }
       localStorage.setItem("prumun_delegate_email", email.trim().toLowerCase());
       navigate("/delegate");
     } catch {
       toast({ title: "Something went wrong. Please try again.", variant: "destructive" });
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       <Navbar />
 
-      <section className="pt-36 pb-24 container max-w-lg">
-        <div className="text-center mb-10">
-          <p className="text-xs tracking-[0.35em] text-primary font-bold mb-3">DELEGATE PORTAL</p>
-          <h1 className="font-display text-4xl font-bold gradient-text-deep mb-2">Welcome Back</h1>
-          <p className="text-muted-foreground text-sm">
-            Sign in with your registered email to access your portal.
+      {/* Dark header */}
+      <div className="page-hero text-center">
+        <div className="container max-w-lg">
+          <span className="eyebrow" style={{ color: "rgba(201,151,58,0.85)" }}>Delegate Sign In</span>
+          <h1 className="font-display font-bold text-white leading-tight" style={{ fontSize: "clamp(2rem, 5vw, 3rem)" }}>
+            Welcome back
+          </h1>
+          <p className="text-white/50 text-sm mt-3">
+            New here?{" "}
+            <Link to="/register" className="text-gold hover:text-gold-light font-semibold underline-offset-2 hover:underline">Register</Link>
           </p>
         </div>
+      </div>
 
-        {/* Track selector */}
-        <fieldset className="mb-6">
-          <legend className="sr-only">Select your participation track</legend>
-          <div className="grid grid-cols-3 gap-2">
+      <section className="py-16 bg-white">
+        <div className="container max-w-lg">
+          {/* Track selector */}
+          <div className="grid grid-cols-3 gap-2 mb-6">
             {TRACKS.map(({ id, label, Icon, tagline }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setTrack(id)}
-                aria-pressed={track === id}
+              <button key={id} type="button" onClick={() => setTrack(id)}
                 className={cn(
-                  "rounded-2xl p-4 text-left transition-all border-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  "rounded-sm p-4 text-left transition-all border",
                   track === id
-                    ? "border-primary bg-primary/5 shadow-soft"
-                    : "border-border glass hover:border-primary/40",
-                )}
-              >
-                <Icon className={cn("w-5 h-5 mb-2", track === id ? "text-primary" : "text-muted-foreground")} />
-                <div className="font-bold text-sm leading-tight">{label}</div>
-                <div className="text-[10px] text-muted-foreground mt-1 leading-snug">{tagline}</div>
+                    ? "border-navy bg-navy/3 shadow-sm"
+                    : "border-navy/10 hover:border-navy/25 bg-white"
+                )}>
+                <Icon className={cn("w-4 h-4 mb-2", track === id ? "text-gold" : "text-navy/35")} />
+                <div className={cn("font-semibold text-xs leading-tight", track === id ? "text-navy" : "text-navy/60")}>{label}</div>
+                <div className="text-[9px] text-navy/35 mt-0.5 leading-snug">{tagline}</div>
               </button>
             ))}
           </div>
-        </fieldset>
 
-        {/* Login form */}
-        <form onSubmit={handleSubmit} noValidate className="glass-strong rounded-3xl p-8 space-y-5 mb-6">
-          <div className="space-y-1.5">
-            <Label htmlFor="email" className="flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5" /> Registered email
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              autoFocus
-              value={email}
-              onChange={e => { setEmail(e.target.value); setFieldError(""); }}
-              placeholder="you@example.com"
-              aria-describedby={fieldError ? "email-error" : undefined}
-              aria-invalid={!!fieldError}
-              className={cn(fieldError && "border-destructive focus-visible:ring-destructive")}
-            />
-            {fieldError && (
-              <p id="email-error" role="alert" className="text-xs text-destructive font-medium pt-0.5">
-                {fieldError}
-              </p>
-            )}
-          </div>
+          {/* Form card */}
+          <form onSubmit={handleSubmit} noValidate
+            className="border border-navy/8 rounded-sm p-7 shadow-card bg-white mb-5">
+            <div className="space-y-1.5 mb-5">
+              <label htmlFor="email" className="text-xs font-semibold text-navy/55 flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5" /> Registered email
+              </label>
+              <input
+                id="email" type="email" autoComplete="email" autoFocus
+                value={email}
+                onChange={e => { setEmail(e.target.value); setFieldError(""); }}
+                placeholder="you@example.com"
+                className={cn(
+                  "form-input",
+                  fieldError && "border-red-400 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(239,68,68,0.12)]"
+                )}
+              />
+              {fieldError && (
+                <p className="text-xs text-red-500 font-medium pt-0.5">{fieldError}</p>
+              )}
+            </div>
 
-          <Button type="submit" variant="hero" size="lg" className="w-full" disabled={busy}>
-            {busy
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> Checking…</>
-              : <><ArrowRight className="w-4 h-4" /> Continue to Portal</>
-            }
-          </Button>
+            <button type="submit" disabled={busy}
+              className="btn-gold w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+              {busy
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Checking…</>
+                : <><ArrowRight className="w-4 h-4" /> Continue to Portal</>
+              }
+            </button>
 
-          <p className="text-xs text-center text-muted-foreground">
-            Use the same email you registered with.
+            <p className="text-[10px] text-center text-navy/35 mt-4">
+              Use the same email you registered with.
+            </p>
+          </form>
+
+          {/* Register link */}
+          <p className="text-center text-xs text-navy/40 mb-5">
+            New here?{" "}
+            <Link to={`/register?as=${track}`} className="text-navy font-semibold hover:text-gold transition-colors">
+              Register as {TRACKS.find(t => t.id === track)?.label}
+            </Link>
           </p>
-        </form>
 
-        {/* Register link */}
-        <p className="text-center text-sm text-muted-foreground mb-4">
-          New here?{" "}
-          <Link to={`/register?as=${track}`} className="text-primary font-semibold hover:underline underline-offset-2">
-            Register as {TRACKS.find(t => t.id === track)?.label}
+          {/* Secretariat link */}
+          <Link to="/secretariat-login"
+            className="flex items-center gap-3 border border-navy/10 rounded-sm p-4 hover:border-navy/25 hover:shadow-card transition-all group bg-white">
+            <div className="w-9 h-9 rounded-sm bg-navy flex items-center justify-center shrink-0">
+              <ShieldAlert className="w-4 h-4 text-white" />
+            </div>
+            <div className="flex-1">
+              <div className="font-semibold text-navy text-sm">Secretariat Console</div>
+              <div className="text-[11px] text-navy/40">Admin access · Core team only</div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-navy/25 group-hover:text-navy/60 transition-colors" />
           </Link>
-        </p>
-
-        {/* Secretariat link */}
-        <Link
-          to="/secretariat-login"
-          className="glass rounded-2xl p-4 flex items-center gap-3 hover-lift block group"
-        >
-          <div className="w-10 h-10 rounded-xl bg-gradient-deep text-primary-foreground flex items-center justify-center shrink-0">
-            <ShieldAlert className="w-5 h-5" />
-          </div>
-          <div className="flex-1">
-            <div className="font-semibold text-sm">Secretariat Console</div>
-            <div className="text-xs text-muted-foreground">Admin access · Core team only</div>
-          </div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-        </Link>
+        </div>
       </section>
 
       <Footer />

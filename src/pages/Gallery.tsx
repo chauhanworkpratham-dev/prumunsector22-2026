@@ -1,47 +1,37 @@
 import { useEffect, useState } from "react";
-import { Navbar }  from "@/components/Navbar";
-import { Footer }  from "@/components/Footer";
-import { Button }  from "@/components/ui/button";
-import { Input }   from "@/components/ui/input";
-import { Label }   from "@/components/ui/label";
-import { Textarea }from "@/components/ui/textarea";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 import { useSession } from "@/hooks/useSession";
 import { useActiveEdition } from "@/hooks/useActiveEdition";
-import { Plus, X, Upload, Trash2, Pencil, Save, Image, Trophy, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, X, Upload, Trash2, Pencil, Save, Trophy, ChevronLeft, ChevronRight, Image, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 type Winner = { name: string; award: string; committee: string };
 type GalleryEdition = {
-  id: string;
-  year: string;
-  title: string;
-  tagline: string;
-  description: string;
-  photos: string[];
-  winners: Winner[];
-  delegates: string;
-  committees: string;
+  id: string; year: string; title: string; tagline: string;
+  description: string; photos: string[]; winners: Winner[];
+  delegates: string; committees: string;
 };
 
 const GALLERY_KEY = "mun_gallery_editions";
-
 const loadGallery = (): GalleryEdition[] => {
-  try { const s = localStorage.getItem(GALLERY_KEY); return s ? JSON.parse(s) : []; }
-  catch { return []; }
+  try { const s = localStorage.getItem(GALLERY_KEY); return s ? JSON.parse(s) : []; } catch { return []; }
 };
-const saveGallery = (data: GalleryEdition[]) => localStorage.setItem(GALLERY_KEY, JSON.stringify(data));
+const saveGallery = (d: GalleryEdition[]) => localStorage.setItem(GALLERY_KEY, JSON.stringify(d));
 
 export default function GalleryPage() {
   const { isSecretariat } = useSession();
   const { edition } = useActiveEdition();
-  const [editions,   setEditions]   = useState<GalleryEdition[]>([]);
-  const [lightbox,   setLightbox]   = useState<{ photos: string[]; idx: number } | null>(null);
-  const [editing,    setEditing]    = useState<GalleryEdition | null>(null);
-  const [addOpen,    setAddOpen]    = useState(false);
-  const [newEd,      setNewEd]      = useState<Omit<GalleryEdition, "id">>({
-    year: "", title: "", tagline: "", description: "", photos: [], winners: [], delegates: "", committees: "",
-  });
-  const [newWinner, setNewWinner]   = useState<Winner>({ name: "", award: "", committee: "" });
+  const [editions, setEditions] = useState<GalleryEdition[]>([]);
+  const [lightbox, setLightbox] = useState<{ photos: string[]; idx: number } | null>(null);
+  const [editing, setEditing] = useState<GalleryEdition | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const blank = { year: "", title: "", tagline: "", description: "", photos: [], winners: [], delegates: "", committees: "" };
+  const [newEd, setNewEd] = useState<Omit<GalleryEdition, "id">>(blank);
 
   useEffect(() => { setEditions(loadGallery()); }, []);
 
@@ -59,8 +49,7 @@ export default function GalleryPage() {
     if (!newEd.year || !newEd.title) return;
     const updated = [{ ...newEd, id: `ge-${Date.now()}` }, ...editions];
     setEditions(updated); saveGallery(updated);
-    setAddOpen(false);
-    setNewEd({ year: "", title: "", tagline: "", description: "", photos: [], winners: [], delegates: "", committees: "" });
+    setAddOpen(false); setNewEd(blank);
   };
 
   const saveEdit = () => {
@@ -74,234 +63,214 @@ export default function GalleryPage() {
     setEditions(updated); saveGallery(updated);
   };
 
-  const lightboxPrev = () => setLightbox(l => l ? { ...l, idx: (l.idx - 1 + l.photos.length) % l.photos.length } : null);
-  const lightboxNext = () => setLightbox(l => l ? { ...l, idx: (l.idx + 1) % l.photos.length } : null);
+  const lbPrev = () => setLightbox(l => l ? { ...l, idx: (l.idx - 1 + l.photos.length) % l.photos.length } : null);
+  const lbNext = () => setLightbox(l => l ? { ...l, idx: (l.idx + 1) % l.photos.length } : null);
 
   return (
-    <div className="min-h-screen bg-background mesh-bg">
+    <div className="min-h-screen bg-white">
       <Navbar />
 
-      {/* Hero */}
-      <section className="pt-28 md:pt-32 pb-10 container text-center">
-        <p className="section-label">Our Legacy</p>
-        <h1 className="font-display text-4xl md:text-6xl font-bold gradient-text-deep leading-tight mt-2 mb-4">
-          Gallery &amp; Past MUNs
-        </h1>
-        <p className="text-muted-foreground text-sm max-w-xl mx-auto">
-          Relive the moments, debates, and victories from every edition of {edition?.name?.split(" ")[0] ?? "PRUMUN"}.
-        </p>
-        {isSecretariat && (
-          <Button variant="hero" className="mt-6" onClick={() => setAddOpen(true)}>
-            <Plus className="w-4 h-4" /> Add Edition
-          </Button>
-        )}
-      </section>
+      {/* Dark header */}
+      <div className="page-hero">
+        <div className="container max-w-5xl">
+          <span className="eyebrow" style={{ color: "rgba(201,151,58,0.85)" }}>Media Library</span>
+          <h1 className="font-display font-bold text-white leading-tight" style={{ fontSize: "clamp(2rem, 5vw, 3rem)" }}>
+            Moments. Memories.<br className="hidden sm:block" /> Diplomacy in motion.
+          </h1>
+        </div>
+      </div>
 
-      {/* Grid */}
-      <section className="container pb-24 space-y-16">
-        {editions.length === 0 && (
-          <div className="glass rounded-3xl p-20 text-center text-muted-foreground">
-            <Image className="w-12 h-12 mx-auto mb-4 opacity-25" />
-            <p className="font-semibold">No editions added yet.</p>
-            {isSecretariat && <p className="text-xs mt-1">Click "Add Edition" above to get started.</p>}
-          </div>
-        )}
+      <section className="py-16 bg-white">
+        <div className="container max-w-5xl">
 
-        {editions.map(ed => (
-          <div key={ed.id} className="space-y-5">
-            {/* Edition header */}
-            <div className="flex items-start justify-between gap-4">
+          {/* Brochure download banner */}
+          <div className="flex items-center justify-between border border-navy/8 rounded-sm p-5 mb-12 shadow-card">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-sm bg-gold/10 flex items-center justify-center shrink-0">
+                <Download className="w-5 h-5 text-gold" />
+              </div>
               <div>
-                <span className="section-label">{ed.year}</span>
-                <h2 className="font-display text-2xl md:text-3xl font-bold">{ed.title}</h2>
-                {ed.tagline && <p className="text-primary font-semibold text-sm mt-0.5">{ed.tagline}</p>}
-                {ed.description && <p className="text-muted-foreground text-sm mt-2 max-w-2xl leading-relaxed">{ed.description}</p>}
-                {(ed.delegates || ed.committees) && (
-                  <div className="flex gap-4 mt-3">
-                    {ed.delegates && <span className="text-xs font-bold text-primary">{ed.delegates} Delegates</span>}
-                    {ed.committees && <span className="text-xs font-bold text-primary">{ed.committees} Committees</span>}
+                <p className="font-semibold text-navy text-sm">Official {edition?.name ?? "PRUMUN"} Brochure</p>
+                <p className="text-navy/45 text-xs mt-0.5">All committees, agendas, rules of procedure, and study guides.</p>
+              </div>
+            </div>
+            <a href="/brochure" className="btn-gold text-xs shrink-0">
+              <Download className="w-3.5 h-3.5" /> Download PDF
+            </a>
+          </div>
+
+          {/* Secretariat add button */}
+          {isSecretariat && (
+            <div className="flex justify-end mb-6">
+              <button onClick={() => setAddOpen(true)} className="btn-gold text-xs">
+                <Plus className="w-3.5 h-3.5" /> Add Edition
+              </button>
+            </div>
+          )}
+
+          {editions.length === 0 && (
+            <div className="border border-navy/8 rounded-sm py-20 text-center">
+              <Image className="w-10 h-10 text-navy/15 mx-auto mb-3" />
+              <p className="text-navy/40 text-sm font-medium">No editions added yet.</p>
+              {isSecretariat && <p className="text-navy/30 text-xs mt-1">Click "Add Edition" to get started.</p>}
+            </div>
+          )}
+
+          {editions.map(ed => (
+            <div key={ed.id} className="mb-16">
+              {/* Edition header */}
+              <div className="flex items-start justify-between gap-4 mb-5">
+                <div>
+                  <span className="eyebrow">{ed.year}</span>
+                  <h2 className="font-display font-bold text-navy text-2xl md:text-3xl">{ed.title}</h2>
+                  {ed.tagline && <p className="text-gold font-semibold text-sm mt-0.5">{ed.tagline}</p>}
+                  {ed.description && <p className="text-navy/50 text-xs mt-2 max-w-xl leading-relaxed">{ed.description}</p>}
+                  {(ed.delegates || ed.committees) && (
+                    <div className="flex gap-4 mt-3 text-xs font-bold text-navy/50">
+                      {ed.delegates && <span>{ed.delegates} Delegates</span>}
+                      {ed.committees && <span>{ed.committees} Committees</span>}
+                    </div>
+                  )}
+                </div>
+                {isSecretariat && (
+                  <div className="flex gap-2 shrink-0">
+                    <button onClick={() => setEditing(ed)} className="btn-ghost text-xs px-3 py-1.5">
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => deleteEdition(ed.id)} className="text-red-400 hover:text-red-600 transition-colors p-1">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 )}
               </div>
-              {isSecretariat && (
-                <div className="flex gap-2 shrink-0">
-                  <Button variant="outline" size="sm" onClick={() => setEditing(ed)}><Pencil className="w-3.5 h-3.5" /></Button>
-                  <Button variant="ghost" size="sm" onClick={() => deleteEdition(ed.id)} className="text-destructive"><Trash2 className="w-3.5 h-3.5" /></Button>
+
+              {/* Photo section label */}
+              {ed.photos.length > 0 && (
+                <>
+                  <p className="font-semibold text-navy text-sm mb-3 flex items-center gap-2">
+                    <span className="w-4 h-px bg-gold inline-block" />
+                    Photo highlights
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+                    {ed.photos.map((ph, i) => (
+                      <button key={i}
+                        onClick={() => setLightbox({ photos: ed.photos, idx: i })}
+                        className={cn(
+                          "overflow-hidden rounded-sm bg-navy/5 hover:opacity-90 transition-opacity",
+                          i === 0 ? "col-span-2 aspect-[4/3]" : "aspect-video"
+                        )}>
+                        <img src={ph} alt="" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* Winners */}
+              {ed.winners.length > 0 && (
+                <div>
+                  <p className="font-semibold text-navy text-sm mb-3 flex items-center gap-2">
+                    <span className="w-4 h-px bg-gold inline-block" />
+                    Video reels
+                  </p>
+                  <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {ed.winners.map((w, i) => (
+                      <div key={i} className="flex items-center gap-3 border border-navy/8 rounded-sm px-4 py-3">
+                        <Trophy className="w-4 h-4 text-gold shrink-0" />
+                        <div>
+                          <p className="text-xs font-bold text-navy">{w.name}</p>
+                          <p className="text-[10px] text-navy/40">{w.award} · {w.committee}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
+
+              <div className="h-px bg-navy/6 mt-10" />
             </div>
-
-            {/* Photo masonry grid */}
-            {ed.photos.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {ed.photos.map((ph, i) => (
-                  <button key={i} onClick={() => setLightbox({ photos: ed.photos, idx: i })}
-                    className={cn(
-                      "aspect-video rounded-xl overflow-hidden bg-secondary hover:scale-[1.02] transition-all duration-300 shadow-card hover:shadow-elegant",
-                      i === 0 && "col-span-2 row-span-2 aspect-square"
-                    )}>
-                    <img src={ph} alt="" className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Winners */}
-            {ed.winners.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Trophy className="w-4 h-4 text-warning" />
-                  <h3 className="font-bold text-sm">Award Winners</h3>
-                </div>
-                <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2">
-                  {ed.winners.map((w, i) => (
-                    <div key={i} className="flex items-center gap-3 glass rounded-xl px-3 py-2.5">
-                      <div className="w-8 h-8 rounded-full bg-warning/15 flex items-center justify-center shrink-0">
-                        <Trophy className="w-4 h-4 text-warning" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold truncate">{w.name}</p>
-                        <p className="text-[11px] text-muted-foreground">{w.award} · {w.committee}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="h-px bg-border/40" />
-          </div>
-        ))}
+          ))}
+        </div>
       </section>
 
-      {/* ── Lightbox ── */}
+      {/* Lightbox */}
       {lightbox && (
-        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
-          <button onClick={e => { e.stopPropagation(); lightboxPrev(); }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 hover:bg-white/30 flex items-center justify-center transition-colors">
+        <div className="fixed inset-0 z-[60] bg-black/92 flex items-center justify-center p-4"
+          onClick={() => setLightbox(null)}>
+          <button onClick={e => { e.stopPropagation(); lbPrev(); }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center transition-colors">
             <ChevronLeft className="w-5 h-5 text-white" />
           </button>
-          <img
-            src={lightbox.photos[lightbox.idx]}
-            alt=""
-            className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain"
-            onClick={e => e.stopPropagation()}
-          />
-          <button onClick={e => { e.stopPropagation(); lightboxNext(); }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 hover:bg-white/30 flex items-center justify-center transition-colors">
+          <img src={lightbox.photos[lightbox.idx]} alt="" className="max-h-[90vh] max-w-[90vw] rounded-sm object-contain"
+            onClick={e => e.stopPropagation()} />
+          <button onClick={e => { e.stopPropagation(); lbNext(); }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center transition-colors">
             <ChevronRight className="w-5 h-5 text-white" />
           </button>
           <button onClick={() => setLightbox(null)}
-            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/15 hover:bg-white/30 flex items-center justify-center transition-colors">
+            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center transition-colors">
             <X className="w-4 h-4 text-white" />
           </button>
-          <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/60 text-xs">
+          <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/40 text-xs">
             {lightbox.idx + 1} / {lightbox.photos.length}
           </p>
         </div>
       )}
 
-      {/* ── Add/Edit Modal ── */}
+      {/* Add/Edit Modal */}
       {(addOpen || editing) && (
-        <EditionModal
-          value={editing ?? newEd as any}
-          isEdit={!!editing}
-          onClose={() => { setAddOpen(false); setEditing(null); }}
-          onSave={editing ? saveEdit : addEdition}
-          onChange={editing ? (v: any) => setEditing(v) : (v: any) => setNewEd(v)}
-          onPhotoAdd={(file) => addPhoto(file, editing ? "edit" : "new")}
-        />
+        <div className="fixed inset-0 z-50 bg-navy/40 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => { setAddOpen(false); setEditing(null); }}>
+          <div className="bg-white rounded-sm p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-slide-up shadow-elegant"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-display text-xl font-bold text-navy">{editing ? "Edit Edition" : "Add Edition"}</h3>
+              <button onClick={() => { setAddOpen(false); setEditing(null); }} className="text-navy/35 hover:text-navy">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-navy/45 block mb-1.5">Year</label>
+                  <Input value={editing?.year ?? newEd.year}
+                    onChange={e => editing ? setEditing(p => p ? { ...p, year: e.target.value } : p) : setNewEd(p => ({ ...p, year: e.target.value }))}
+                    placeholder="2024" className="border-navy/15" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-navy/45 block mb-1.5">Title</label>
+                  <Input value={editing?.title ?? newEd.title}
+                    onChange={e => editing ? setEditing(p => p ? { ...p, title: e.target.value } : p) : setNewEd(p => ({ ...p, title: e.target.value }))}
+                    placeholder="PRUMUN 2024" className="border-navy/15" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-navy/45 block mb-1.5">Description</label>
+                <Textarea rows={3}
+                  value={editing?.description ?? newEd.description}
+                  onChange={e => editing ? setEditing(p => p ? { ...p, description: e.target.value } : p) : setNewEd(p => ({ ...p, description: e.target.value }))}
+                  className="border-navy/15 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-navy/45 block mb-1.5">Photos</label>
+                <label className="flex items-center gap-2 border border-navy/12 rounded-sm px-4 py-3 cursor-pointer hover:bg-navy/3 transition text-sm text-navy/55">
+                  <Upload className="w-4 h-4" /> Upload photos (multiple)
+                  <input type="file" multiple accept="image/*" className="hidden"
+                    onChange={e => Array.from(e.target.files ?? []).forEach(f => addPhoto(f, editing ? "edit" : "new"))} />
+                </label>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button onClick={() => { setAddOpen(false); setEditing(null); }} className="btn-ghost text-xs px-4 py-1.5">Cancel</button>
+                <button onClick={editing ? saveEdit : addEdition} className="btn-gold text-xs px-4">
+                  <Save className="w-3.5 h-3.5" /> {editing ? "Save changes" : "Add Edition"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       <Footer />
     </div>
   );
 }
-
-const EditionModal = ({
-  value, isEdit, onClose, onSave, onChange, onPhotoAdd,
-}: {
-  value: GalleryEdition;
-  isEdit: boolean;
-  onClose: () => void;
-  onSave: () => void;
-  onChange: (v: GalleryEdition) => void;
-  onPhotoAdd: (f: File) => void;
-}) => {
-  const [newWinner, setNewWinner] = useState<Winner>({ name: "", award: "", committee: "" });
-  const set = (k: keyof GalleryEdition, v: any) => onChange({ ...value, [k]: v });
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="glass-strong rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-slide-up" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="font-display text-xl font-bold">{isEdit ? "Edit Edition" : "Add Past Edition"}</h3>
-          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-secondary flex items-center justify-center"><X className="w-4 h-4" /></button>
-        </div>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5"><Label>Year</Label><Input value={value.year} onChange={e => set("year", e.target.value)} placeholder="2024" /></div>
-            <div className="space-y-1.5"><Label>Title</Label><Input value={value.title} onChange={e => set("title", e.target.value)} placeholder="PRUMUN 2024" /></div>
-          </div>
-          <div className="space-y-1.5"><Label>Tagline</Label><Input value={value.tagline} onChange={e => set("tagline", e.target.value)} placeholder="Shaping Tomorrow's Leaders" /></div>
-          <div className="space-y-1.5"><Label>Description</Label><Textarea rows={3} value={value.description} onChange={e => set("description", e.target.value)} /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5"><Label>No. of Delegates</Label><Input value={value.delegates} onChange={e => set("delegates", e.target.value)} placeholder="250" /></div>
-            <div className="space-y-1.5"><Label>No. of Committees</Label><Input value={value.committees} onChange={e => set("committees", e.target.value)} placeholder="8" /></div>
-          </div>
-
-          {/* Photos */}
-          <div className="space-y-2">
-            <Label>Photos</Label>
-            <label className="flex items-center gap-2 glass rounded-xl px-4 py-3 cursor-pointer hover:bg-secondary transition">
-              <Upload className="w-4 h-4" /><span className="text-sm">Upload photos (multiple)</span>
-              <input type="file" multiple accept="image/*" className="hidden" onChange={e => Array.from(e.target.files ?? []).forEach(onPhotoAdd)} />
-            </label>
-            {value.photos.length > 0 && (
-              <div className="grid grid-cols-4 gap-2">
-                {value.photos.map((ph, i) => (
-                  <div key={i} className="relative aspect-video rounded-lg overflow-hidden bg-secondary">
-                    <img src={ph} alt="" className="w-full h-full object-cover" />
-                    <button onClick={() => set("photos", value.photos.filter((_, j) => j !== i))}
-                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center">
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Winners */}
-          <div className="space-y-2">
-            <Label>Award Winners</Label>
-            <div className="grid grid-cols-3 gap-2">
-              <Input placeholder="Name" value={newWinner.name} onChange={e => setNewWinner(p => ({ ...p, name: e.target.value }))} />
-              <Input placeholder="Award" value={newWinner.award} onChange={e => setNewWinner(p => ({ ...p, award: e.target.value }))} />
-              <Input placeholder="Committee" value={newWinner.committee} onChange={e => setNewWinner(p => ({ ...p, committee: e.target.value }))} />
-            </div>
-            <Button variant="outline" size="sm" onClick={() => {
-              if (!newWinner.name || !newWinner.award) return;
-              set("winners", [...value.winners, { ...newWinner }]);
-              setNewWinner({ name: "", award: "", committee: "" });
-            }}><Plus className="w-3 h-3" /> Add Winner</Button>
-            {value.winners.map((w, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs glass rounded-xl px-3 py-2">
-                <Trophy className="w-3.5 h-3.5 text-warning shrink-0" />
-                <span className="flex-1">{w.name} — {w.award} ({w.committee})</span>
-                <button onClick={() => set("winners", value.winners.filter((_, j) => j !== i))}><X className="w-3 h-3 text-destructive" /></button>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button variant="hero" onClick={onSave} disabled={!value.year || !value.title}>
-              <Save className="w-4 h-4" /> {isEdit ? "Save changes" : "Add Edition"}
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
