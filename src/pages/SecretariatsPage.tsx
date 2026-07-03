@@ -1,47 +1,41 @@
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useActiveEdition } from "@/hooks/useActiveEdition";
-import { PageBackdrop } from "@/hooks/usePageBackground";
-import { Users, Mail, Phone, MessageSquare, CheckCircle2, ChevronRight, LayoutGrid, List, X, Loader2 } from "lucide-react";
+import {
+  Users, Mail, Phone, MessageSquare, CheckCircle2,
+  ChevronRight, LayoutGrid, List, X, Loader2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import crest from "@/assets/prumun-crest.png";
 
 type Member = {
-  id: string;
-  name: string;
-  role: "secretariat" | "staff";
-  position: string;
-  phone: string;
-  email: string;
-  photo: string;
+  id: string; name: string; role: "secretariat" | "staff";
+  position: string; phone: string; email: string; photo: string;
 };
 
 const DEFAULTS: Member[] = [
-  { id: "s1", role: "secretariat", name: "Aarav Sharma",   position: "Secretary General",    phone: "+91 98765 43210", email: "secgen@prumun.org",   photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Aarav"  },
-  { id: "s2", role: "secretariat", name: "Diya Kapoor",    position: "Director General",      phone: "+91 98765 43211", email: "dg@prumun.org",        photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Diya"   },
-  { id: "s3", role: "secretariat", name: "Rohan Mehra",    position: "Deputy Secretary",      phone: "+91 98765 43213", email: "dep@prumun.org",       photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Rohan"  },
-  { id: "f1", role: "staff",       name: "Priya Nair",     position: "Chief of Staff",        phone: "+91 98765 43214", email: "cos@prumun.org",       photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Priya"  },
-  { id: "f2", role: "staff",       name: "Karan Bhatia",   position: "Head of Logistics",     phone: "+91 98765 43215", email: "logistics@prumun.org", photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Karan"  },
-  { id: "f3", role: "staff",       name: "Ananya Gupta",   position: "Head of Publications",  phone: "+91 98765 43216", email: "pub@prumun.org",       photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Ananya" },
+  { id: "s1", role: "secretariat", name: "Aarav Sharma",  position: "Secretary General",   phone: "+91 98765 43210", email: "secgen@prumun.org",   photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Aarav"  },
+  { id: "s2", role: "secretariat", name: "Diya Kapoor",   position: "Director General",     phone: "+91 98765 43211", email: "dg@prumun.org",        photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Diya"   },
+  { id: "s3", role: "secretariat", name: "Rohan Mehra",   position: "Deputy Secretary",     phone: "+91 98765 43213", email: "dep@prumun.org",       photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Rohan"  },
+  { id: "f1", role: "staff",       name: "Priya Nair",    position: "Chief of Staff",       phone: "+91 98765 43214", email: "cos@prumun.org",       photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Priya"  },
+  { id: "f2", role: "staff",       name: "Karan Bhatia",  position: "Head of Logistics",    phone: "+91 98765 43215", email: "logistics@prumun.org", photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Karan"  },
+  { id: "f3", role: "staff",       name: "Ananya Gupta",  position: "Head of Publications", phone: "+91 98765 43216", email: "pub@prumun.org",       photo: "https://api.dicebear.com/7.x/adventurer/svg?seed=Ananya" },
 ];
 
 type Phase = 1 | 2 | 3;
 
 export const SecretariatsPage = ({ type }: { type: "secretariat" | "staff" }) => {
   const { edition } = useActiveEdition();
-  const [members, setMembers] = useState<Member[]>([]);
-  const [layout,  setLayout]  = useState<"grid" | "list">("grid");
-
-  const [target,   setTarget]   = useState<Member | null>(null);
-  const [phase,    setPhase]    = useState<Phase>(1);
-  const [sending,  setSending]  = useState(false);
+  const [members,  setMembers] = useState<Member[]>([]);
+  const [layout,   setLayout]  = useState<"grid" | "list">("grid");
+  const [target,   setTarget]  = useState<Member | null>(null);
+  const [phase,    setPhase]   = useState<Phase>(1);
+  const [sending,  setSending] = useState(false);
   const [delegateInfo, setDInfo] = useState({ name: "", school: "", grade: "", role: "Delegate", contact: "" });
-  const [msgForm, setMsgForm]   = useState({ recipientId: "", title: "", body: "" });
+  const [msgForm,  setMsgForm] = useState({ recipientId: "", title: "", body: "" });
 
   useEffect(() => {
     const stored = localStorage.getItem("mun_secretariats_list");
@@ -74,210 +68,254 @@ export const SecretariatsPage = ({ type }: { type: "secretariat" | "staff" }) =>
     setPhase(3);
   };
 
+  const isSecretariat = type === "secretariat";
+
   return (
-    <div className="min-h-screen bg-background mesh-bg">
+    <div className="min-h-screen bg-white">
       <Navbar />
-      <PageBackdrop pageKey="venue" />
 
-      {/* ── Header — increased top padding to avoid navbar clip ── */}
-      <section className="pt-28 md:pt-32 pb-10 container text-center">
-        <p className="section-label">{type === "secretariat" ? "Leadership Board" : "Officers & Staff"}</p>
-        <h1 className="font-display text-4xl md:text-6xl font-bold gradient-text-deep mb-4 leading-tight mt-2">
-          {type === "secretariat" ? "The Secretariat" : "Our Staff"}
-        </h1>
-        <p className="text-muted-foreground text-sm max-w-xl mx-auto mb-8">
-          Meet the team coordinating {edition?.name ?? "the conference"} behind the scenes.
-          Reach out directly through the message channel below.
-        </p>
-
-        <div className="inline-flex tab-bar">
-          <button className="tab-item" aria-selected={layout === "grid"} onClick={() => setLayout("grid")}>
-            <LayoutGrid className="w-3.5 h-3.5 inline mr-1.5" />Grid
-          </button>
-          <button className="tab-item" aria-selected={layout === "list"} onClick={() => setLayout("list")}>
-            <List className="w-3.5 h-3.5 inline mr-1.5" />List
-          </button>
+      {/* ── Dark page hero — matches reference screenshots ── */}
+      <div className="page-hero">
+        <div className="container max-w-4xl">
+          <span className="eyebrow" style={{ color: "rgba(201,151,58,0.85)" }}>
+            {isSecretariat ? "Leadership Board" : "Officers & Staff"}
+          </span>
+          <h1 className="font-display font-bold text-white leading-tight"
+            style={{ fontSize: "clamp(2rem, 5vw, 3.25rem)" }}>
+            {isSecretariat ? "The Secretariat" : "Our Staff"}
+          </h1>
+          <p className="text-white/50 text-sm mt-3 max-w-md">
+            Meet the team coordinating {edition?.name ?? "the conference"} behind the scenes.
+            Reach out directly through the message channel below.
+          </p>
         </div>
-      </section>
+      </div>
 
-      {/* ── Members ── */}
-      <section className="container pb-24">
-        {filtered.length === 0 ? (
-          <div className="glass rounded-2xl p-16 text-center text-muted-foreground text-sm">
-            Profiles will appear once added in the Secretariat console.
-          </div>
-        ) : layout === "grid" ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filtered.map((m, i) => (
-              <div key={m.id} className="glass rounded-2xl p-6 hover-lift flex flex-col items-center text-center gap-4 animate-fade-in"
-                style={{ animationDelay: `${i * 60}ms` }}>
-                <div className="w-24 h-24 rounded-2xl overflow-hidden ring-2 ring-primary/20 shadow-card bg-secondary shrink-0">
-                  <img src={m.photo} alt={m.name} className="w-full h-full object-cover" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-display font-bold text-lg leading-tight">{m.name}</h3>
-                  <p className="text-xs font-semibold text-primary mt-0.5 tracking-wide">{m.position}</p>
-                  {m.phone && (
-                    <p className="text-[11px] text-muted-foreground mt-2 flex items-center justify-center gap-1">
-                      <Phone className="w-3 h-3" /> {m.phone}
-                    </p>
-                  )}
-                </div>
-                <Button onClick={() => openModal(m)} size="sm"
-                  className="w-full bg-gradient-primary text-white border-0 font-semibold hover:opacity-90 transition-opacity">
-                  <MessageSquare className="w-3.5 h-3.5" /> Message
-                </Button>
-              </div>
+      {/* Layout toggle + grid */}
+      <section className="py-12 bg-white">
+        <div className="container max-w-5xl">
+
+          {/* Toggle */}
+          <div className="flex items-center justify-end gap-1 mb-8">
+            {(["grid", "list"] as const).map(v => (
+              <button key={v} onClick={() => setLayout(v)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold border transition-all",
+                  layout === v
+                    ? "bg-navy text-white border-navy"
+                    : "bg-white text-navy/50 border-navy/12 hover:border-navy/30 hover:text-navy"
+                )}>
+                {v === "grid" ? <LayoutGrid className="w-3.5 h-3.5" /> : <List className="w-3.5 h-3.5" />}
+                {v.charAt(0).toUpperCase() + v.slice(1)}
+              </button>
             ))}
           </div>
-        ) : (
-          <div className="space-y-3 max-w-3xl mx-auto">
-            {filtered.map((m, i) => (
-              <div key={m.id} className="glass rounded-2xl p-4 hover-lift flex items-center gap-4 animate-slide-in"
-                style={{ animationDelay: `${i * 50}ms` }}>
-                <div className="w-14 h-14 rounded-xl overflow-hidden ring-1 ring-primary/20 bg-secondary shrink-0">
-                  <img src={m.photo} alt={m.name} className="w-full h-full object-cover" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-display font-bold truncate">{m.name}</h3>
-                  <p className="text-xs text-primary font-semibold">{m.position}</p>
-                  <div className="flex flex-wrap gap-3 mt-1">
-                    {m.phone && <span className="text-[11px] text-muted-foreground flex items-center gap-1"><Phone className="w-3 h-3" /> {m.phone}</span>}
-                    {m.email && <span className="text-[11px] text-muted-foreground flex items-center gap-1"><Mail className="w-3 h-3" /> {m.email}</span>}
+
+          {filtered.length === 0 ? (
+            <div className="border border-navy/8 rounded-sm py-16 text-center text-sm text-navy/40 bg-white">
+              Profiles will appear once added in the Secretariat console.
+            </div>
+          ) : layout === "grid" ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filtered.map((m, i) => (
+                <div key={m.id}
+                  className="border border-navy/8 rounded-sm bg-white shadow-card p-6 flex flex-col items-center text-center gap-4 hover:shadow-elegant hover:-translate-y-0.5 transition-all animate-fade-in"
+                  style={{ animationDelay: `${i * 60}ms` }}>
+                  <div className="w-20 h-20 rounded-sm overflow-hidden border border-navy/10 bg-navy/5 shrink-0">
+                    <img src={m.photo} alt={m.name} className="w-full h-full object-cover" />
                   </div>
+                  <div className="flex-1">
+                    <h3 className="font-display font-bold text-navy text-lg leading-tight">{m.name}</h3>
+                    <p className="text-xs font-semibold text-gold mt-0.5">{m.position}</p>
+                    {m.phone && (
+                      <p className="text-[11px] text-navy/40 mt-2 flex items-center justify-center gap-1">
+                        <Phone className="w-3 h-3" /> {m.phone}
+                      </p>
+                    )}
+                  </div>
+                  <button onClick={() => openModal(m)}
+                    className="btn-gold w-full justify-center text-xs">
+                    <MessageSquare className="w-3.5 h-3.5" /> Message
+                  </button>
                 </div>
-                <Button onClick={() => openModal(m)} size="sm" variant="outline"
-                  className="shrink-0 font-semibold border-primary/30 text-primary hover:bg-primary hover:text-white transition-all">
-                  <MessageSquare className="w-3.5 h-3.5" /> Message
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2 max-w-3xl mx-auto">
+              {filtered.map((m, i) => (
+                <div key={m.id}
+                  className="border border-navy/8 rounded-sm bg-white shadow-card p-4 flex items-center gap-4 hover:shadow-elegant transition-all animate-fade-in"
+                  style={{ animationDelay: `${i * 50}ms` }}>
+                  <div className="w-12 h-12 rounded-sm overflow-hidden border border-navy/10 bg-navy/5 shrink-0">
+                    <img src={m.photo} alt={m.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-display font-bold text-navy truncate">{m.name}</h3>
+                    <p className="text-xs font-semibold text-gold">{m.position}</p>
+                    <div className="flex flex-wrap gap-3 mt-1">
+                      {m.phone && (
+                        <span className="text-[11px] text-navy/40 flex items-center gap-1">
+                          <Phone className="w-3 h-3" /> {m.phone}
+                        </span>
+                      )}
+                      {m.email && (
+                        <span className="text-[11px] text-navy/40 flex items-center gap-1">
+                          <Mail className="w-3 h-3" /> {m.email}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <button onClick={() => openModal(m)} className="btn-ghost text-xs shrink-0">
+                    <MessageSquare className="w-3.5 h-3.5" /> Message
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
 
       {/* ── Message Modal ── */}
       {target && (
-        <div className="fixed inset-0 z-50 bg-foreground/40 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in"
+        <div className="fixed inset-0 z-50 bg-navy/30 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
           onClick={() => { if (phase !== 3) setTarget(null); }}>
-          <div className="glass-strong rounded-3xl p-6 md:p-8 max-w-lg w-full animate-slide-up"
+          <div className="border border-navy/8 rounded-sm bg-white shadow-elegant p-6 md:p-8 max-w-lg w-full animate-slide-up"
             onClick={e => e.stopPropagation()}>
 
-            <div className="flex items-center justify-between gap-4 mb-5 pb-4 border-b border-border/50">
+            {/* Modal header */}
+            <div className="flex items-center justify-between gap-4 mb-6 pb-5 border-b border-navy/8">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl overflow-hidden ring-1 ring-primary/20 bg-secondary">
+                <div className="w-10 h-10 rounded-sm overflow-hidden border border-navy/10 bg-navy/5 shrink-0">
                   <img src={target.photo} alt={target.name} className="w-full h-full object-cover" />
                 </div>
                 <div>
-                  <p className="font-display font-bold text-sm">{target.name}</p>
-                  <p className="text-xs text-primary font-semibold">{target.position}</p>
+                  <p className="font-display font-bold text-navy text-sm leading-tight">{target.name}</p>
+                  <p className="text-[11px] font-semibold text-gold">{target.position}</p>
                 </div>
               </div>
               {phase !== 3 && (
                 <button onClick={() => setTarget(null)} aria-label="Close"
-                  className="w-8 h-8 rounded-xl glass flex items-center justify-center hover:bg-destructive/10 transition-colors">
+                  className="w-7 h-7 rounded-sm flex items-center justify-center text-navy/35 hover:text-navy hover:bg-navy/5 transition-colors">
                   <X className="w-4 h-4" />
                 </button>
               )}
             </div>
 
+            {/* Step indicator */}
             {phase !== 3 && (
-              <div className="flex items-center gap-1 mb-6 text-[10px] font-bold tracking-widest text-muted-foreground">
+              <div className="flex items-center gap-1 mb-6 text-[10px] font-bold tracking-widest text-navy/40">
                 {(["YOUR DETAILS", "MESSAGE"] as const).map((label, idx) => (
-                  <div key={label} className="flex items-center gap-1">
-                    <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold",
-                      phase === idx + 1 ? "bg-primary text-white" : phase > idx + 1 ? "bg-success/20 text-success" : "bg-secondary text-muted-foreground"
+                  <div key={label} className="flex items-center gap-1.5">
+                    <span className={cn(
+                      "w-5 h-5 rounded-sm flex items-center justify-center text-[9px] font-bold",
+                      phase === idx + 1 ? "bg-navy text-white" :
+                      phase > idx + 1  ? "bg-gold text-white"  : "bg-navy/8 text-navy/40"
                     )}>{idx + 1}</span>
-                    <span className={phase === idx + 1 ? "text-primary" : ""}>{label}</span>
-                    {idx === 0 && <ChevronRight className="w-3 h-3 text-border" />}
+                    <span className={phase === idx + 1 ? "text-navy" : ""}>{label}</span>
+                    {idx === 0 && <ChevronRight className="w-3 h-3 text-navy/20" />}
                   </div>
                 ))}
               </div>
             )}
 
+            {/* Phase 1 — Delegate info */}
             {phase === 1 && (
               <div className="space-y-3 animate-fade-in">
                 <div className="space-y-1.5">
-                  <Label htmlFor="d-name">Full Name</Label>
-                  <Input id="d-name" value={delegateInfo.name} onChange={e => setDInfo(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Aarav Gupta" />
+                  <Label className="text-xs font-semibold text-navy/55">Full Name</Label>
+                  <input className="form-input" value={delegateInfo.name}
+                    onChange={e => setDInfo(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Aarav Gupta" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="d-school">School</Label>
-                    <Input id="d-school" value={delegateInfo.school} onChange={e => setDInfo(p => ({ ...p, school: e.target.value }))} placeholder="Prudence School" />
+                    <Label className="text-xs font-semibold text-navy/55">School</Label>
+                    <input className="form-input" value={delegateInfo.school}
+                      onChange={e => setDInfo(p => ({ ...p, school: e.target.value }))} placeholder="Prudence School" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="d-grade">Class</Label>
-                    <Input id="d-grade" value={delegateInfo.grade} onChange={e => setDInfo(p => ({ ...p, grade: e.target.value }))} placeholder="e.g. 11-A" />
+                    <Label className="text-xs font-semibold text-navy/55">Class</Label>
+                    <input className="form-input" value={delegateInfo.grade}
+                      onChange={e => setDInfo(p => ({ ...p, grade: e.target.value }))} placeholder="e.g. 11-A" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="d-role">Role</Label>
-                    <select id="d-role" value={delegateInfo.role} onChange={e => setDInfo(p => ({ ...p, role: e.target.value }))}
-                      className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                    <Label className="text-xs font-semibold text-navy/55">Role</Label>
+                    <select value={delegateInfo.role} onChange={e => setDInfo(p => ({ ...p, role: e.target.value }))}
+                      className="form-input h-10">
                       <option>Delegate</option>
                       <option>Executive Board</option>
                       <option>Organising Committee</option>
                     </select>
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="d-contact">Contact</Label>
-                    <Input id="d-contact" value={delegateInfo.contact} onChange={e => setDInfo(p => ({ ...p, contact: e.target.value }))} placeholder="Phone or email" />
+                    <Label className="text-xs font-semibold text-navy/55">Contact</Label>
+                    <input className="form-input" value={delegateInfo.contact}
+                      onChange={e => setDInfo(p => ({ ...p, contact: e.target.value }))} placeholder="Phone or email" />
                   </div>
                 </div>
-                <div className="flex justify-end pt-2">
-                  <Button onClick={() => setPhase(2)}
+                <div className="flex justify-end pt-2 border-t border-navy/6">
+                  <button onClick={() => setPhase(2)}
                     disabled={!delegateInfo.name || !delegateInfo.school || !delegateInfo.contact}
-                    className="bg-gradient-primary text-white border-0 font-semibold">
+                    className="btn-gold disabled:opacity-40 disabled:cursor-not-allowed">
                     Next <ChevronRight className="w-4 h-4" />
-                  </Button>
+                  </button>
                 </div>
               </div>
             )}
 
+            {/* Phase 2 — Message form */}
             {phase === 2 && (
               <div className="space-y-3 animate-fade-in">
                 <div className="space-y-1.5">
-                  <Label htmlFor="msg-to">Send to</Label>
-                  <select id="msg-to" value={msgForm.recipientId} onChange={e => setMsgForm(p => ({ ...p, recipientId: e.target.value }))}
-                    className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                    {members.map(m => <option key={m.id} value={m.id}>{m.name} — {m.position}</option>)}
+                  <Label className="text-xs font-semibold text-navy/55">Send to</Label>
+                  <select value={msgForm.recipientId}
+                    onChange={e => setMsgForm(p => ({ ...p, recipientId: e.target.value }))}
+                    className="form-input h-10">
+                    {members.map(m => (
+                      <option key={m.id} value={m.id}>{m.name} — {m.position}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="msg-title">Subject</Label>
-                  <Input id="msg-title" value={msgForm.title} onChange={e => setMsgForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Background Guide clarification" />
+                  <Label className="text-xs font-semibold text-navy/55">Subject</Label>
+                  <input className="form-input" value={msgForm.title}
+                    onChange={e => setMsgForm(p => ({ ...p, title: e.target.value }))}
+                    placeholder="e.g. Background Guide clarification" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="msg-body">Message</Label>
-                  <Textarea id="msg-body" rows={4} value={msgForm.body} onChange={e => setMsgForm(p => ({ ...p, body: e.target.value }))} placeholder="Write your message here…" />
+                  <Label className="text-xs font-semibold text-navy/55">Message</Label>
+                  <Textarea rows={4} value={msgForm.body}
+                    onChange={e => setMsgForm(p => ({ ...p, body: e.target.value }))}
+                    placeholder="Write your message here…"
+                    className="border-navy/15 text-navy placeholder:text-navy/30 focus:border-gold focus:ring-gold/20 text-sm" />
                 </div>
-                <div className="flex justify-between pt-2">
-                  <Button variant="ghost" size="sm" onClick={() => setPhase(1)}>Back</Button>
-                  <Button onClick={sendMessage} disabled={!msgForm.title || !msgForm.body || sending}
-                    className="bg-gradient-primary text-white border-0 font-semibold">
-                    {sending ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</> : "Send Message"}
-                  </Button>
+                <div className="flex justify-between pt-2 border-t border-navy/6">
+                  <button onClick={() => setPhase(1)} className="btn-ghost text-xs">Back</button>
+                  <button onClick={sendMessage} disabled={!msgForm.title || !msgForm.body || sending}
+                    className="btn-gold text-xs disabled:opacity-40 disabled:cursor-not-allowed">
+                    {sending
+                      ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sending…</>
+                      : "Send Message"}
+                  </button>
                 </div>
               </div>
             )}
 
+            {/* Phase 3 — Success */}
             {phase === 3 && (
               <div className="text-center py-6 space-y-4 animate-fade-in">
-                <div className="w-16 h-16 mx-auto rounded-2xl bg-success/10 text-success flex items-center justify-center">
-                  <CheckCircle2 className="w-8 h-8" />
+                <div className="w-14 h-14 mx-auto rounded-sm bg-green-50 border border-green-200 text-green-600 flex items-center justify-center">
+                  <CheckCircle2 className="w-7 h-7" />
                 </div>
                 <div>
-                  <h4 className="font-display text-xl font-bold mb-1">Message Sent!</h4>
-                  <p className="text-xs text-muted-foreground">To: {target.name} · {target.position}</p>
+                  <h4 className="font-display text-xl font-bold text-navy mb-1">Message Sent!</h4>
+                  <p className="text-xs text-navy/40">To: {target.name} · {target.position}</p>
                 </div>
-                <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                  The team will get back to you via the contact you provided. Thank you!
+                <p className="text-sm text-navy/50 max-w-xs mx-auto">
+                  The team will get back to you via the contact you provided.
                 </p>
-                <Button variant="outline" className="rounded-xl px-8 font-semibold" onClick={() => setTarget(null)}>
-                  Done
-                </Button>
+                <button onClick={() => setTarget(null)} className="btn-ghost px-8">Done</button>
               </div>
             )}
           </div>

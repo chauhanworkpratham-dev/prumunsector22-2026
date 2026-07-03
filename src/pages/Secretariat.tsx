@@ -9,7 +9,7 @@ import {
   LogOut, ShieldCheck, Users, Megaphone, CalendarDays, FileText,
   Video, Radio, Building2, Settings, Archive, UserCog, ClipboardCheck,
   Crown, HardHat, MessageSquare, Bot, CreditCard, ChevronRight,
-  LayoutDashboard, Menu, X, Trophy, BarChart3,
+  Menu, X, Trophy, BarChart3, Loader2,
 } from "lucide-react";
 import { AttendanceTab }          from "@/components/secretariat/AttendanceTab";
 import { DelegatesTab }           from "@/components/secretariat/DelegatesTab";
@@ -34,24 +34,24 @@ import type { TabKey }            from "@/lib/munApi";
 import { cn, initials }           from "@/lib/utils";
 
 const ALL_TABS: { id: TabKey; label: string; icon: any; group: string }[] = [
-  { id: "analytics",    label: "Analytics",        icon: BarChart3,      group: "Overview" },
-  { id: "grades",       label: "Grades",           icon: Trophy,         group: "Overview" },
-  { id: "delegates",    label: "Delegates",        icon: Users,          group: "People"   },
-  { id: "eb",           label: "Executive Board",  icon: Crown,          group: "People"   },
-  { id: "oc",           label: "OC",               icon: HardHat,        group: "People"   },
-  { id: "attendance",   label: "Attendance",       icon: ClipboardCheck, group: "People"   },
-  { id: "payments",     label: "Payments",         icon: CreditCard,     group: "People"   },
-  { id: "announcements",label: "Announcements",    icon: Megaphone,      group: "Content"  },
-  { id: "schedule",     label: "Schedule",         icon: CalendarDays,   group: "Content"  },
-  { id: "brochure",     label: "Brochure",         icon: FileText,       group: "Content"  },
-  { id: "training",     label: "Training Library", icon: Video,          group: "Content"  },
-  { id: "sessions",     label: "Live Sessions",    icon: Radio,          group: "Content"  },
-  { id: "committees",   label: "Committees",       icon: Building2,      group: "Content"  },
-  { id: "contacts",     label: "Messages",         icon: MessageSquare,  group: "System"   },
-  { id: "members",      label: "Members",          icon: UserCog,        group: "System"   },
-  { id: "ai_chats",     label: "AI Logs",          icon: Bot,            group: "System"   },
-  { id: "settings",     label: "CMS",              icon: Settings,       group: "System"   },
-  { id: "editions",     label: "Editions",         icon: Archive,        group: "System"   },
+  { id: "analytics",     label: "Analytics",        icon: BarChart3,      group: "Overview" },
+  { id: "grades",        label: "Grades",           icon: Trophy,         group: "Overview" },
+  { id: "delegates",     label: "Delegates",        icon: Users,          group: "People"   },
+  { id: "eb",            label: "Executive Board",  icon: Crown,          group: "People"   },
+  { id: "oc",            label: "OC",               icon: HardHat,        group: "People"   },
+  { id: "attendance",    label: "Attendance",       icon: ClipboardCheck, group: "People"   },
+  { id: "payments",      label: "Payments",         icon: CreditCard,     group: "People"   },
+  { id: "announcements", label: "Announcements",    icon: Megaphone,      group: "Content"  },
+  { id: "schedule",      label: "Schedule",         icon: CalendarDays,   group: "Content"  },
+  { id: "brochure",      label: "Brochure",         icon: FileText,       group: "Content"  },
+  { id: "training",      label: "Training Library", icon: Video,          group: "Content"  },
+  { id: "sessions",      label: "Live Sessions",    icon: Radio,          group: "Content"  },
+  { id: "committees",    label: "Committees",       icon: Building2,      group: "Content"  },
+  { id: "contacts",      label: "Messages",         icon: MessageSquare,  group: "System"   },
+  { id: "members",       label: "Members",          icon: UserCog,        group: "System"   },
+  { id: "ai_chats",      label: "AI Logs",          icon: Bot,            group: "System"   },
+  { id: "settings",      label: "CMS",              icon: Settings,       group: "System"   },
+  { id: "editions",      label: "Editions",         icon: Archive,        group: "System"   },
 ];
 
 const GROUPS = ["Overview", "People", "Content", "System"] as const;
@@ -61,6 +61,7 @@ const Secretariat = () => {
   const { checking, isSec, userId } = useSecretariatAuth();
   const { edition, refresh: refreshEdition } = useActiveEdition();
   const perms = usePermissions(userId);
+
   const [activeTab,      setActiveTab]      = useState<TabKey>("analytics");
   const [secEmail,       setSecEmail]       = useState<string | null>(null);
   const [sideCollapsed,  setSideCollapsed]  = useState(false);
@@ -74,11 +75,12 @@ const Secretariat = () => {
 
   const switchTab = (t: TabKey) => { setActiveTab(t); setMobileSideOpen(false); };
 
+  /* ── Loading ── */
   if (checking) return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="min-h-screen bg-white flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-primary animate-pulse" />
-        <p className="text-sm text-muted-foreground">Verifying access…</p>
+        <Loader2 className="w-8 h-8 animate-spin text-navy/30" />
+        <p className="text-sm text-navy/40">Verifying access…</p>
       </div>
     </div>
   );
@@ -90,9 +92,11 @@ const Secretariat = () => {
 
   const renderContent = () => {
     if (!edition && activeTab !== "editions") return (
-      <div className="glass rounded-2xl p-16 text-center text-muted-foreground">
-        No active edition. Create one in{" "}
-        <button className="text-primary font-semibold underline" onClick={() => switchTab("editions")}>Editions</button>.
+      <div className="border border-navy/8 rounded-sm p-16 text-center bg-white">
+        <p className="text-navy/40 text-sm">No active edition. Create one in{" "}
+          <button className="text-gold font-semibold underline underline-offset-2"
+            onClick={() => switchTab("editions")}>Editions</button>.
+        </p>
       </div>
     );
     switch (activeTab) {
@@ -114,11 +118,11 @@ const Secretariat = () => {
       case "ai_chats":      return <AIChatLogsTab editionId={edition!.id} />;
       case "settings":      return <EditsTab edition={edition!} onSaved={refreshEdition} />;
       case "editions":      return <EditionsTab activeEdition={edition} onChanged={refreshEdition} />;
-      default: return null;
+      default:              return null;
     }
   };
 
-  /* ── Shared sidebar nav ── */
+  /* ── Shared side nav ── */
   const SideNav = ({ collapsed = false }: { collapsed?: boolean }) => (
     <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-5">
       {GROUPS.map(group => {
@@ -127,7 +131,7 @@ const Secretariat = () => {
         return (
           <div key={group}>
             {!collapsed && (
-              <p className="text-[9px] font-bold tracking-[0.2em] text-muted-foreground/50 uppercase px-3 mb-1.5">{group}</p>
+              <p className="text-[9px] font-bold tracking-[0.22em] text-navy/30 uppercase px-3 mb-1.5">{group}</p>
             )}
             <div className="space-y-0.5">
               {groupTabs.map(t => {
@@ -137,15 +141,17 @@ const Secretariat = () => {
                   <button key={t.id} onClick={() => switchTab(t.id)}
                     title={collapsed ? t.label : undefined}
                     className={cn(
-                      "w-full flex items-center gap-2.5 rounded-xl transition-all text-sm",
+                      "w-full flex items-center gap-2.5 rounded-sm transition-all text-sm",
                       collapsed ? "justify-center p-2.5" : "px-3 py-2.5",
                       active
-                        ? "bg-primary/10 text-primary font-semibold shadow-sm"
-                        : "text-foreground/60 hover:bg-secondary/70 hover:text-foreground",
+                        ? "bg-navy text-white font-semibold"
+                        : "text-navy/55 hover:bg-navy/5 hover:text-navy",
                     )}>
                     <Icon className="w-4 h-4 shrink-0" />
                     {!collapsed && <span className="truncate text-[13px]">{t.label}</span>}
-                    {active && !collapsed && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />}
+                    {active && !collapsed && (
+                      <div className="ml-auto w-1.5 h-1.5 rounded-full bg-gold" />
+                    )}
                   </button>
                 );
               })}
@@ -157,51 +163,53 @@ const Secretariat = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
       <Navbar />
 
-      <div className="flex flex-1 pt-16 overflow-hidden">
+      <div className="flex flex-1 pt-14 overflow-hidden">
 
-        {/* ══ Desktop sidebar ══ */}
+        {/* ── Desktop sidebar ── */}
         <aside className={cn(
-          "hidden md:flex flex-col border-r border-border/50 shrink-0 transition-all duration-300 bg-white/80 backdrop-blur-xl",
+          "hidden md:flex flex-col border-r border-navy/8 shrink-0 transition-all duration-300 bg-white",
           sideCollapsed ? "w-[60px]" : "w-[220px]",
         )}>
-          <div className="flex items-center gap-2 px-3 py-4 border-b border-border/40 min-h-[56px]">
+          {/* Sidebar header */}
+          <div className="flex items-center gap-2 px-3 py-4 border-b border-navy/8 min-h-[56px]">
             {!sideCollapsed && (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />
-                  <span className="text-[11px] font-bold text-primary tracking-widest uppercase">Admin</span>
+                  <ShieldCheck className="w-3.5 h-3.5 text-gold shrink-0" />
+                  <span className="text-[11px] font-bold text-navy tracking-widest uppercase">Admin</span>
                 </div>
-                {edition && <p className="text-[10px] text-muted-foreground truncate">{edition.name}</p>}
+                {edition && <p className="text-[10px] text-navy/40 truncate mt-0.5">{edition.name}</p>}
               </div>
             )}
             <button onClick={() => setSideCollapsed(v => !v)}
-              className="w-7 h-7 rounded-lg hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary transition-colors shrink-0">
+              className="w-7 h-7 rounded-sm hover:bg-navy/5 flex items-center justify-center text-navy/35 hover:text-navy transition-colors shrink-0">
               <ChevronRight className={cn("w-3.5 h-3.5 transition-transform duration-300", !sideCollapsed && "rotate-180")} />
             </button>
           </div>
 
           <SideNav collapsed={sideCollapsed} />
 
-          <div className="border-t border-border/40 p-3">
+          {/* Sidebar footer */}
+          <div className="border-t border-navy/8 p-3">
             {sideCollapsed ? (
               <button onClick={logout} title="Sign out"
-                className="w-full flex items-center justify-center p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/8 transition-all">
+                className="w-full flex items-center justify-center p-2 rounded-sm text-navy/35 hover:text-red-600 hover:bg-red-50 transition-all">
                 <LogOut className="w-4 h-4" />
               </button>
             ) : (
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-7 h-7 rounded-full bg-gradient-primary text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                <div className="w-7 h-7 rounded-sm bg-navy flex items-center justify-center text-[10px] font-bold text-white shrink-0">
                   {initials(secEmail?.split("@")[0] ?? "A")}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-semibold truncate">{secEmail?.split("@")[0]}</p>
-                  <p className="text-[9px] text-muted-foreground truncate">{secEmail}</p>
+                  <p className="text-[11px] font-semibold text-navy truncate">{secEmail?.split("@")[0]}</p>
+                  <p className="text-[9px] text-navy/40 truncate">{secEmail}</p>
                 </div>
                 <button onClick={logout} title="Sign out"
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/8 transition-all shrink-0">
+                  className="p-1.5 rounded-sm text-navy/35 hover:text-red-600 hover:bg-red-50 transition-all shrink-0">
                   <LogOut className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -209,35 +217,36 @@ const Secretariat = () => {
           </div>
         </aside>
 
-        {/* ══ Mobile sidebar drawer (full screen) ══ */}
+        {/* ── Mobile sidebar drawer ── */}
         {mobileSideOpen && (
           <div className="md:hidden fixed inset-0 z-50 flex">
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileSideOpen(false)} />
-            <aside className="relative w-72 max-w-[85vw] bg-white/95 backdrop-blur-xl flex flex-col h-full shadow-2xl animate-slide-in">
-              <div className="flex items-center justify-between px-4 py-4 border-b border-border/40">
+            <div className="absolute inset-0 bg-navy/25 backdrop-blur-sm" onClick={() => setMobileSideOpen(false)} />
+            <aside className="relative w-72 max-w-[85vw] bg-white flex flex-col h-full shadow-elegant border-r border-navy/8">
+              <div className="flex items-center justify-between px-4 py-4 border-b border-navy/8">
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-primary" />
-                    <span className="text-xs font-bold text-primary tracking-widest uppercase">Admin Portal</span>
+                    <ShieldCheck className="w-4 h-4 text-gold" />
+                    <span className="text-xs font-bold text-navy tracking-widest uppercase">Admin Portal</span>
                   </div>
-                  {edition && <p className="text-[10px] text-muted-foreground mt-0.5">{edition.name}</p>}
+                  {edition && <p className="text-[10px] text-navy/40 mt-0.5">{edition.name}</p>}
                 </div>
                 <button onClick={() => setMobileSideOpen(false)}
-                  className="w-8 h-8 rounded-full hover:bg-secondary flex items-center justify-center">
+                  className="w-8 h-8 rounded-sm hover:bg-navy/5 flex items-center justify-center text-navy/40">
                   <X className="w-4 h-4" />
                 </button>
               </div>
               <SideNav />
-              <div className="border-t border-border/40 p-4">
+              <div className="border-t border-navy/8 p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-primary text-white flex items-center justify-center text-xs font-bold shrink-0">
+                  <div className="w-8 h-8 rounded-sm bg-navy flex items-center justify-center text-xs font-bold text-white shrink-0">
                     {initials(secEmail?.split("@")[0] ?? "A")}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold truncate">{secEmail?.split("@")[0]}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{secEmail}</p>
+                    <p className="text-xs font-semibold text-navy truncate">{secEmail?.split("@")[0]}</p>
+                    <p className="text-[10px] text-navy/40 truncate">{secEmail}</p>
                   </div>
-                  <button onClick={logout} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/8 transition-all">
+                  <button onClick={logout}
+                    className="p-1.5 rounded-sm text-navy/35 hover:text-red-600 hover:bg-red-50 transition-all">
                     <LogOut className="w-4 h-4" />
                   </button>
                 </div>
@@ -246,36 +255,34 @@ const Secretariat = () => {
           </div>
         )}
 
-        {/* ══ Main content ══ */}
-        <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
+        {/* ── Main content ── */}
+        <main className="flex-1 min-w-0 flex flex-col overflow-hidden bg-white">
 
-          {/* Mobile floating action button to open sidebar */}
+          {/* Mobile floating button */}
           <div className="md:hidden fixed bottom-6 right-6 z-40">
-            <button
-              onClick={() => setMobileSideOpen(true)}
-              className="w-14 h-14 rounded-2xl bg-gradient-primary text-white shadow-elegant flex items-center justify-center hover:opacity-90 transition-all active:scale-95"
-              aria-label="Open navigation"
-            >
+            <button onClick={() => setMobileSideOpen(true)}
+              className="w-14 h-14 rounded-sm bg-navy text-white shadow-elegant flex items-center justify-center hover:bg-navy-mid transition-all active:scale-95"
+              aria-label="Open navigation">
               <Menu className="w-6 h-6" />
             </button>
           </div>
 
-          {/* Mobile active tab indicator bar */}
-          <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-border/40 bg-white/80 backdrop-blur-sm">
+          {/* Mobile active tab bar */}
+          <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-navy/8 bg-white">
             {activeTabMeta && (
               <>
-                <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                  <activeTabMeta.icon className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-sm bg-navy flex items-center justify-center shrink-0">
+                  <activeTabMeta.icon className="w-4 h-4 text-white" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-sm truncate">{activeTabMeta.label}</p>
-                  {edition && <p className="text-[10px] text-muted-foreground truncate">{edition.name}</p>}
+                  <p className="font-bold text-sm text-navy truncate">{activeTabMeta.label}</p>
+                  {edition && <p className="text-[10px] text-navy/40 truncate">{edition.name}</p>}
                 </div>
               </>
             )}
           </div>
 
-          {/* Content */}
+          {/* Tab content */}
           <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-6">
             <div className="animate-fade-in">
               {renderContent()}
